@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Current Affairs — CA Daily</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="config.js"></script>
+<style>
+  :root{
+    --ink:#0f1117;--paper:#faf8f3;--accent:#c8102e;--accent2:#1a3a5c;
+    --gold:#d4a843;--muted:#6b7280;--border:#e5e0d5;--card-bg:#ffffff;
+    --green:#16a34a;--cat-h:44px;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink)}
+
+  /* NAV */
+  nav{position:sticky;top:0;z-index:200;background:rgba(250,248,243,.95);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:60px;gap:1rem}
+  .logo{font-family:'Playfair Display',serif;font-size:1.3rem;font-weight:900;color:var(--ink);text-decoration:none;white-space:nowrap}
+  .logo span{color:var(--accent)}
+  .nav-right{display:flex;align-items:center;gap:1rem}
+  .nav-link{text-decoration:none;color:var(--muted);font-size:.88rem;font-weight:500;transition:color .2s}
+  .nav-link:hover,.nav-link.active{color:var(--ink)}
+  .live-pill{display:flex;align-items:center;gap:.4rem;background:#fff;border:1px solid var(--border);border-radius:20px;padding:.25rem .75rem;font-size:.72rem;font-weight:700;color:var(--green)}
+  .live-dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 1.5s infinite}
+
+  /* LAYOUT */
+  .page-wrap{display:grid;grid-template-columns:280px 1fr;gap:0;min-height:calc(100vh - 60px)}
+
+  /* SIDEBAR */
+  aside{border-right:1px solid var(--border);padding:1.5rem;background:#fff;position:sticky;top:60px;height:calc(100vh - 60px);overflow-y:auto}
+  .sidebar-section{margin-bottom:2rem}
+  .sidebar-label{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);margin-bottom:.75rem}
+
+  /* DATE PICKER */
+  .date-input{width:100%;padding:.6rem .8rem;border:1.5px solid var(--border);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.88rem;color:var(--ink);background:#faf8f3;cursor:pointer;outline:none;transition:border-color .2s}
+  .date-input:focus{border-color:var(--accent)}
+
+  /* DATE QUICK BTNS */
+  .quick-dates{display:flex;flex-direction:column;gap:.4rem;margin-top:.6rem}
+  .qd-btn{background:none;border:1.5px solid var(--border);border-radius:6px;padding:.45rem .8rem;font-family:'DM Sans',sans-serif;font-size:.82rem;cursor:pointer;color:var(--muted);text-align:left;transition:all .2s}
+  .qd-btn:hover,.qd-btn.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+  /* CATEGORY FILTERS */
+  .cat-filters{display:flex;flex-direction:column;gap:.35rem}
+  .cat-btn{display:flex;align-items:center;gap:.6rem;background:none;border:none;padding:.5rem .6rem;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.84rem;cursor:pointer;color:var(--muted);transition:all .2s;text-align:left;width:100%}
+  .cat-btn:hover{background:#f5f2eb;color:var(--ink)}
+  .cat-btn.active{background:var(--ink);color:#fff}
+  .cat-btn .count{margin-left:auto;font-size:.72rem;opacity:.6;font-weight:600}
+  .cat-icon{font-size:1rem;width:1.2rem;text-align:center}
+
+  /* SEARCH */
+  .search-wrap{position:relative}
+  .search-input{width:100%;padding:.6rem .8rem .6rem 2.2rem;border:1.5px solid var(--border);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.88rem;color:var(--ink);background:#faf8f3;outline:none;transition:border-color .2s}
+  .search-input:focus{border-color:var(--accent)}
+  .search-icon{position:absolute;left:.7rem;top:50%;transform:translateY(-50%);color:var(--muted);font-size:.9rem}
+
+  /* MAIN CONTENT */
+  main{padding:2rem;max-width:900px}
+
+  /* TOOLBAR */
+  .toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;gap:1rem;flex-wrap:wrap}
+  .result-info{font-size:.88rem;color:var(--muted)}
+  .result-info strong{color:var(--ink)}
+  .sort-select{padding:.45rem .75rem;border:1.5px solid var(--border);border-radius:6px;font-family:'DM Sans',sans-serif;font-size:.82rem;color:var(--ink);background:#fff;cursor:pointer;outline:none}
+
+  /* ARTICLE CARD */
+  .article-card{background:var(--card-bg);border:1px solid var(--border);border-radius:16px;padding:1.75rem;margin-bottom:1.25rem;transition:box-shadow .25s,transform .25s;animation:slideIn .35s ease both}
+  .article-card:hover{box-shadow:0 10px 36px rgba(0,0,0,.09);transform:translateY(-2px)}
+  .card-meta{display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;margin-bottom:.9rem}
+  .cat-badge{padding:.22rem .75rem;border-radius:4px;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+  .source-label{font-size:.75rem;color:var(--muted);font-weight:500}
+  .date-label{font-size:.75rem;color:var(--muted);margin-left:auto}
+  .relevance-chip{display:flex;align-items:center;gap:.35rem;font-size:.72rem;font-weight:600;color:var(--green)}
+  .rel-bar{width:48px;height:4px;background:#e5e7eb;border-radius:2px;overflow:hidden}
+  .rel-fill{height:100%;border-radius:2px;transition:width .5s ease}
+  .card-headline{font-family:'Playfair Display',serif;font-size:1.15rem;font-weight:700;line-height:1.4;color:var(--ink);margin-bottom:.85rem}
+  .card-summary{font-size:.9rem;line-height:1.75;color:#374151}
+  .card-footer{display:flex;align-items:center;gap:1rem;margin-top:1.2rem;padding-top:1rem;border-top:1px solid var(--border)}
+  .read-more{text-decoration:none;font-size:.82rem;font-weight:600;color:var(--accent2);display:flex;align-items:center;gap:.3rem;transition:color .2s}
+  .read-more:hover{color:var(--accent)}
+  .copy-btn{background:none;border:none;cursor:pointer;font-size:.78rem;color:var(--muted);padding:.25rem .5rem;border-radius:4px;transition:background .2s}
+  .copy-btn:hover{background:#f5f2eb;color:var(--ink)}
+
+  /* EMPTY STATE */
+  .empty-state{text-align:center;padding:5rem 2rem;color:var(--muted)}
+  .empty-icon{font-size:3rem;margin-bottom:1rem}
+  .empty-state h3{font-size:1.1rem;color:var(--ink);margin-bottom:.5rem}
+
+  /* LOADING */
+  .skeleton{background:linear-gradient(90deg,#f0ede6 25%,#e8e4dc 50%,#f0ede6 75%);background-size:400px 100%;animation:shimmer 1.4s infinite;border-radius:8px}
+  .sk-title{height:22px;width:80%;margin-bottom:.75rem}
+  .sk-line{height:14px;width:100%;margin-bottom:.5rem}
+  .sk-line.short{width:60%}
+
+  /* PAGINATION */
+  .pagination{display:flex;align-items:center;justify-content:center;gap:.5rem;margin-top:2.5rem;padding-bottom:3rem}
+  .page-btn{padding:.45rem .9rem;border:1.5px solid var(--border);border-radius:6px;background:#fff;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.85rem;color:var(--muted);transition:all .2s}
+  .page-btn:hover,.page-btn.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .page-btn:disabled{opacity:.4;cursor:not-allowed}
+
+  /* CATEGORY COLORS */
+  .c-eco{background:#e8f5e9;color:#2e7d32}
+  .c-pol{background:#fff3e0;color:#e65100}
+  .c-int{background:#e3f2fd;color:#1565c0}
+  .c-sci{background:#f3e5f5;color:#6a1b9a}
+  .c-sch{background:#fce4ec;color:#880e4f}
+  .c-rep{background:#e8eaf6;color:#283593}
+  .c-spo{background:#e0f7fa;color:#00695c}
+  .c-awa{background:#fff8e1;color:#f57f17}
+  .c-imp{background:#fbe9e7;color:#bf360c}
+  .c-sum{background:#e0f2f1;color:#004d40}
+  .c-nat{background:#e8f5e9;color:#1b5e20}
+  .c-sta{background:#f9fbe7;color:#558b2f}
+
+  @keyframes slideIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes shimmer{0%{background-position:-400px 0}100%{background-position:400px 0}}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+  @media(max-width:780px){
+    .page-wrap{grid-template-columns:1fr}
+    aside{position:static;height:auto;border-right:none;border-bottom:1px solid var(--border)}
+    .cat-filters{flex-direction:row;flex-wrap:wrap}
+    .cat-btn{width:auto;flex-shrink:0}
+    .date-label{display:none}
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="logo">CA<span>Daily</span></a>
+  <div class="nav-right">
+    <div class="live-pill"><span class="live-dot"></span>Live</div>
+    <a href="index.html" class="nav-link">Home</a>
+    <a href="news.html" class="nav-link active">Current Affairs</a>
+    <a href="dashboard.html" class="nav-link">Dashboard</a>
+  </div>
+</nav>
+
+<div class="page-wrap">
+  <!-- SIDEBAR -->
+  <aside>
+    <div class="sidebar-section">
+      <div class="sidebar-label">🔍 Search</div>
+      <div class="search-wrap">
+        <span class="search-icon">⌕</span>
+        <input type="text" class="search-input" id="searchInput" placeholder="Search articles…">
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">📅 Date</div>
+      <input type="date" class="date-input" id="dateInput">
+      <div class="quick-dates">
+        <button class="qd-btn active" data-offset="0">Today</button>
+        <button class="qd-btn" data-offset="1">Yesterday</button>
+        <button class="qd-btn" data-offset="2">2 Days Ago</button>
+        <button class="qd-btn" data-offset="7">Last 7 Days</button>
+        <button class="qd-btn" data-offset="15">Last 15 Days</button>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">🏷 Category</div>
+      <div class="cat-filters" id="catFilters">
+        <button class="cat-btn active" data-cat="All"><span class="cat-icon">📰</span>All Categories<span class="count" id="count-all">–</span></button>
+        <button class="cat-btn" data-cat="Economy & Banking"><span class="cat-icon">🏦</span>Economy & Banking<span class="count" id="count-eco">–</span></button>
+        <button class="cat-btn" data-cat="Polity & Governance"><span class="cat-icon">⚖️</span>Polity & Governance<span class="count" id="count-pol">–</span></button>
+        <button class="cat-btn" data-cat="International Relations"><span class="cat-icon">🌐</span>International Relations<span class="count" id="count-int">–</span></button>
+        <button class="cat-btn" data-cat="Science & Technology"><span class="cat-icon">🔬</span>Science & Technology<span class="count" id="count-sci">–</span></button>
+        <button class="cat-btn" data-cat="Schemes & Appointments"><span class="cat-icon">📋</span>Schemes & Appointments<span class="count" id="count-sch">–</span></button>
+        <button class="cat-btn" data-cat="Reports & Indices"><span class="cat-icon">📊</span>Reports & Indices<span class="count" id="count-rep">–</span></button>
+        <button class="cat-btn" data-cat="Sports"><span class="cat-icon">🏆</span>Sports<span class="count" id="count-spo">–</span></button>
+        <button class="cat-btn" data-cat="Awards & Honours"><span class="cat-icon">🏅</span>Awards & Honours<span class="count" id="count-awa">–</span></button>
+        <button class="cat-btn" data-cat="Important Days & Obituaries"><span class="cat-icon">📅</span>Important Days<span class="count" id="count-imp">–</span></button>
+        <button class="cat-btn" data-cat="Summits & Conferences"><span class="cat-icon">🤝</span>Summits & Conferences<span class="count" id="count-sum">–</span></button>
+        <button class="cat-btn" data-cat="National News"><span class="cat-icon">🇮🇳</span>National News<span class="count" id="count-nat">–</span></button>
+        <button class="cat-btn" data-cat="State News"><span class="cat-icon">🏛️</span>State News<span class="count" id="count-sta">–</span></button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main>
+    <div class="toolbar">
+      <div class="result-info" id="resultInfo">Loading…</div>
+      <select class="sort-select" id="sortSelect">
+        <option value="newest">Newest First</option>
+        <option value="relevance">Highest Relevance</option>
+      </select>
+    </div>
+    <div id="articleList"></div>
+    <div class="pagination" id="pagination"></div>
+  </main>
+</div>
+
+<script>
+const API = window.API_BASE;
+let state = { date: null, cat: 'All', search: '', page: 1, limit: 15, sort: 'newest' };
+let searchTimer = null;
+
+// ── Category color map ────────────────────────────────────────────────────────
+const CAT_CLASS = {
+  'Economy & Banking':'c-eco','Polity & Governance':'c-pol',
+  'International Relations':'c-int','Science & Technology':'c-sci',
+  'Schemes & Appointments':'c-sch','Reports & Indices':'c-rep',
+  'Sports':'c-spo','Awards & Honours':'c-awa',
+  'Important Days & Obituaries':'c-imp','Summits & Conferences':'c-sum',
+  'National News':'c-nat','State News':'c-sta'
+};
+
+// ── Date helpers ──────────────────────────────────────────────────────────────
+function todayStr(offset=0){
+  const d=new Date(); d.setDate(d.getDate()-offset);
+  return d.toISOString().split('T')[0];
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+function init(){
+  const params = new URLSearchParams(window.location.search);
+  const today = todayStr();
+
+  // Pre-set date
+  state.date = today;
+  document.getElementById('dateInput').value = today;
+  document.getElementById('dateInput').max = today;
+
+  // Pre-set category from URL param
+  const catParam = params.get('cat');
+  if(catParam && catParam !== 'All'){
+    state.cat = catParam;
+    document.querySelectorAll('.cat-btn').forEach(b=>{
+      b.classList.toggle('active', b.dataset.cat === catParam);
+    });
+  }
+
+  fetchArticles();
+  fetchCounts();
+}
+
+// ── Fetch articles ────────────────────────────────────────────────────────────
+async function fetchArticles(){
+  showSkeleton();
+  const params = new URLSearchParams({page: state.page, limit: state.limit});
+  if(state.date && state.cat !== 'Last 7 Days' && state.cat !== 'Last 15 Days'){
+    params.set('date', state.date);
+  }
+  if(state.cat !== 'All' && state.cat !== 'Last 7 Days' && state.cat !== 'Last 15 Days'){
+    params.set('category', state.cat);
+  }
+  if(state.search) params.set('search', state.search);
+
+  try{
+    const res = await fetch(`${API}/api/news?${params}`);
+    if(!res.ok) throw new Error('API error');
+    let data = await res.json();
+    if(state.sort === 'relevance'){
+      data.articles.sort((a,b)=>b.confidence - a.confidence);
+    }
+    renderArticles(data);
+  } catch(e){
+    document.getElementById('articleList').innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">⚠️</div>
+        <h3>Could not connect to server</h3>
+        <p>Make sure the backend is running. Check config.js for the API URL.</p>
+      </div>`;
+    document.getElementById('resultInfo').textContent = 'Error loading articles';
+  }
+}
+
+// ── Fetch category counts ────────────────────────────────────────────────────
+async function fetchCounts(){
+  try{
+    const params = new URLSearchParams({limit:1000});
+    if(state.date) params.set('date', state.date);
+    const res = await fetch(`${API}/api/news?${params}`);
+    const data = await res.json();
+    const counts = {};
+    data.articles.forEach(a=>{ counts[a.category]=(counts[a.category]||0)+1; });
+    const total = data.total || data.articles.length;
+    document.getElementById('count-all').textContent = total;
+    const keyMap = {
+      'Economy & Banking':'eco','Polity & Governance':'pol',
+      'International Relations':'int','Science & Technology':'sci',
+      'Schemes & Appointments':'sch','Reports & Indices':'rep',
+      'Sports':'spo','Awards & Honours':'awa',
+      'Important Days & Obituaries':'imp','Summits & Conferences':'sum',
+      'National News':'nat','State News':'sta'
+    };
+    Object.entries(keyMap).forEach(([cat,key])=>{
+      const el = document.getElementById(`count-${key}`);
+      if(el) el.textContent = counts[cat]||0;
+    });
+  }catch(e){}
+}
+
+// ── Render ────────────────────────────────────────────────────────────────────
+function renderArticles({articles, total, page, pages}){
+  const list = document.getElementById('articleList');
+  const info = document.getElementById('resultInfo');
+
+  if(!articles.length){
+    list.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">📭</div>
+        <h3>No articles found</h3>
+        <p>Try a different date or category. The pipeline runs every 30 min.</p>
+      </div>`;
+    info.innerHTML = 'No results';
+    renderPagination(0,1,1);
+    return;
+  }
+
+  info.innerHTML = `Showing <strong>${articles.length}</strong> of <strong>${total}</strong> articles`;
+
+  list.innerHTML = articles.map((a,i)=>{
+    const cls = CAT_CLASS[a.category]||'c-nat';
+    const pct = Math.round(a.confidence*100);
+    const relColor = pct>=90?'#16a34a':pct>=80?'#ca8a04':'#dc2626';
+    const delay = i*0.04;
+    return `
+    <div class="article-card" style="animation-delay:${delay}s">
+      <div class="card-meta">
+        <span class="cat-badge ${cls}">${a.category}</span>
+        <span class="source-label">📰 ${a.source||'Unknown'}</span>
+        <span class="relevance-chip" title="Relevance score: ${pct}%">
+          <div class="rel-bar"><div class="rel-fill" style="width:${pct}%;background:${relColor}"></div></div>
+          ${pct}%
+        </span>
+        <span class="date-label">${formatDate(a.date)}</span>
+      </div>
+      <div class="card-headline">${escHtml(a.headline)}</div>
+      <div class="card-summary">${escHtml(a.summary)}</div>
+      <div class="card-footer">
+        ${a.url
+          ? `<a href="${a.url}" target="_blank" rel="noopener" class="read-more">Read More ↗</a>`
+          : '<span class="read-more" style="opacity:.4">No source link</span>'}
+        <button class="copy-btn" onclick="copyText(this,'${encodeURIComponent(a.headline+'\n\n'+a.summary)}')">📋 Copy</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  renderPagination(total, page, pages);
+}
+
+function renderPagination(total, page, pages){
+  const el = document.getElementById('pagination');
+  if(pages<=1){el.innerHTML='';return;}
+  const max=7, half=Math.floor(max/2);
+  let start=Math.max(1,page-half), end=Math.min(pages,start+max-1);
+  if(end-start<max-1) start=Math.max(1,end-max+1);
+  let html = `<button class="page-btn" onclick="goPage(${page-1})" ${page===1?'disabled':''}>‹ Prev</button>`;
+  if(start>1) html+=`<button class="page-btn" onclick="goPage(1)">1</button>${start>2?'<span style="padding:0 .3rem;color:var(--muted)">…</span>':''}`;
+  for(let p=start;p<=end;p++) html+=`<button class="page-btn ${p===page?'active':''}" onclick="goPage(${p})">${p}</button>`;
+  if(end<pages) html+=`${end<pages-1?'<span style="padding:0 .3rem;color:var(--muted)">…</span>':''}<button class="page-btn" onclick="goPage(${pages})">${pages}</button>`;
+  html+=`<button class="page-btn" onclick="goPage(${page+1})" ${page===pages?'disabled':''}>Next ›</button>`;
+  el.innerHTML = html;
+}
+
+function goPage(p){
+  state.page = p;
+  fetchArticles();
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function showSkeleton(){
+  document.getElementById('articleList').innerHTML = Array(6).fill(0).map(()=>`
+    <div class="article-card">
+      <div class="skeleton sk-title"></div>
+      <div class="skeleton sk-line"></div>
+      <div class="skeleton sk-line"></div>
+      <div class="skeleton sk-line short"></div>
+    </div>`).join('');
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+function formatDate(d){
+  if(!d) return '';
+  const dt = new Date(d+'T00:00:00');
+  return dt.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
+}
+function escHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function copyText(btn, encoded){
+  navigator.clipboard.writeText(decodeURIComponent(encoded));
+  btn.textContent='✓ Copied';
+  setTimeout(()=>btn.textContent='📋 Copy',2000);
+}
+
+// ── Event Listeners ──────────────────────────────────────────────────────────
+document.getElementById('dateInput').addEventListener('change', e=>{
+  state.date = e.target.value;
+  state.page = 1;
+  document.querySelectorAll('.qd-btn').forEach(b=>b.classList.remove('active'));
+  fetchArticles();
+  fetchCounts();
+});
+
+document.querySelectorAll('.qd-btn').forEach(btn=>{
+  btn.addEventListener('click', function(){
+    const offset = parseInt(this.dataset.offset);
+    document.querySelectorAll('.qd-btn').forEach(b=>b.classList.remove('active'));
+    this.classList.add('active');
+    if(offset <= 2){
+      state.date = todayStr(offset);
+      document.getElementById('dateInput').value = state.date;
+    } else {
+      // For 7/15 days, we'll just clear date filter to show more
+      state.date = null;
+      document.getElementById('dateInput').value = '';
+    }
+    state.page = 1;
+    fetchArticles();
+    fetchCounts();
+  });
+});
+
+document.getElementById('catFilters').addEventListener('click', e=>{
+  const btn = e.target.closest('.cat-btn');
+  if(!btn) return;
+  document.querySelectorAll('.cat-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  state.cat = btn.dataset.cat;
+  state.page = 1;
+  fetchArticles();
+});
+
+document.getElementById('searchInput').addEventListener('input', e=>{
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(()=>{
+    state.search = e.target.value.trim();
+    state.page = 1;
+    fetchArticles();
+  }, 400);
+});
+
+document.getElementById('sortSelect').addEventListener('change', e=>{
+  state.sort = e.target.value;
+  fetchArticles();
+});
+
+// ── Boot ─────────────────────────────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>
