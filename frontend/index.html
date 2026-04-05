@@ -711,7 +711,7 @@ async function buildConfChart(){
   // Fetch all articles without date filter to get confidence distribution
   const buckets = {'60-70':0,'70-80':0,'80-90':0,'90-100':0};
   try{
-    const r = await fetch(`${API}/api/news?min_confidence=0.60&limit=500`);
+    const r = await fetch(`${API}/api/news?min_confidence=0.60&limit=200`);
     const d = await r.json();
     for(const a of (d.articles||[])){
       const c = Math.round((a.confidence||0)*100);
