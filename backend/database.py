@@ -188,12 +188,13 @@ def get_articles(
     limit:           int   = 100,
     offset:          int   = 0,
     date_from:       Optional[str] = None,
+    search:          Optional[str] = None,
 ) -> List[Dict]:
     conn = get_connection()
     cur  = conn.cursor()
     ph   = _ph()
 
-    q      = f"SELECT id,date,category,headline,summary,source,confidence,word_count,fetched_at FROM exam_ca_articles WHERE confidence >= {ph}"
+    q      = f"SELECT id,date,category,headline,summary,source,confidence,url,word_count,fetched_at FROM exam_ca_articles WHERE confidence >= {ph}"
     params = [min_confidence]
 
     if date_filter:
@@ -203,6 +204,14 @@ def get_articles(
 
     if category_filter and category_filter != 'All':
         q += f" AND category = {ph}"; params.append(category_filter)
+
+    if search and search.strip():
+        if USE_PG:
+            q += f" AND (headline ILIKE {ph} OR summary ILIKE {ph})"
+            params.extend([f'%{search}%', f'%{search}%'])
+        else:
+            q += f" AND (headline LIKE {ph} OR summary LIKE {ph})"
+            params.extend([f'%{search}%', f'%{search}%'])
 
     q += f" ORDER BY date DESC, confidence DESC LIMIT {ph} OFFSET {ph}"
     params.extend([limit, offset])
@@ -224,6 +233,7 @@ def get_article_count(
     category_filter: Optional[str] = None,
     min_confidence:  float = 0.8,
     date_from:       Optional[str] = None,
+    search:          Optional[str] = None,
 ) -> int:
     conn = get_connection()
     cur  = conn.cursor()
@@ -239,6 +249,14 @@ def get_article_count(
 
     if category_filter and category_filter != 'All':
         q += f" AND category = {ph}"; params.append(category_filter)
+
+    if search and search.strip():
+        if USE_PG:
+            q += f" AND (headline ILIKE {ph} OR summary ILIKE {ph})"
+            params.extend([f'%{search}%', f'%{search}%'])
+        else:
+            q += f" AND (headline LIKE {ph} OR summary LIKE {ph})"
+            params.extend([f'%{search}%', f'%{search}%'])
 
     cur.execute(q, params)
     count = cur.fetchone()[0]

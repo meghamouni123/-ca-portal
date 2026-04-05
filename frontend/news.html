@@ -89,6 +89,9 @@
   .read-more:hover{color:var(--accent)}
   .copy-btn{background:none;border:none;cursor:pointer;font-size:.78rem;color:var(--muted);padding:.25rem .5rem;border-radius:4px;transition:background .2s}
   .copy-btn:hover{background:#f5f2eb;color:var(--ink)}
+  .bookmark-btn{background:none;border:none;cursor:pointer;font-size:.88rem;color:var(--muted);padding:.25rem .5rem;border-radius:4px;transition:all .2s;margin-left:auto}
+  .bookmark-btn:hover{color:var(--gold)}
+  .bookmark-btn.saved{color:var(--gold)}
 
   /* EMPTY STATE */
   .empty-state{text-align:center;padding:5rem 2rem;color:var(--muted)}
@@ -201,7 +204,7 @@
 
 <script>
 const API = window.API_BASE;
-let state = { date: null, cat: 'All', search: '', page: 1, limit: 15, sort: 'newest' };
+let state = { date: null, date_from: null, cat: 'All', search: '', page: 1, limit: 15 };
 let searchTimer = null;
 
 // ── Category color map ────────────────────────────────────────────────────────
@@ -247,13 +250,10 @@ function init(){
 async function fetchArticles(){
   showSkeleton();
   const params = new URLSearchParams({page: state.page, limit: state.limit});
-  if(state.date && state.cat !== 'Last 7 Days' && state.cat !== 'Last 15 Days'){
-    params.set('date', state.date);
-  }
-  if(state.cat !== 'All' && state.cat !== 'Last 7 Days' && state.cat !== 'Last 15 Days'){
-    params.set('category', state.cat);
-  }
-  if(state.search) params.set('search', state.search);
+  if(state.date)      params.set('date', state.date);
+  if(state.date_from) params.set('date_from', state.date_from);
+  if(state.cat !== 'All') params.set('category', state.cat);
+  if(state.search)    params.set('search', state.search);
 
   try{
     const res = await fetch(`${API}/api/news?${params}`);
@@ -275,7 +275,8 @@ async function fetchArticles(){
 async function fetchCounts(){
   try{
     const params = new URLSearchParams({limit:1000});
-    if(state.date) params.set('date', state.date);
+    if(state.date)      params.set('date', state.date);
+    if(state.date_from) params.set('date_from', state.date_from);
     const res = await fetch(`${API}/api/news?${params}`);
     const data = await res.json();
     const counts = {};
@@ -300,10 +301,9 @@ async function fetchCounts(){
 // ── Render ────────────────────────────────────────────────────────────────────
 function formatSummary(summary){
   if(!summary) return '';
-  // Split on newlines or bullet-like separators, render as inline points separated by " · "
   const lines = summary.split(/\n+/).map(l=>l.replace(/^[\-•*]\s*/,'').trim()).filter(Boolean);
-  if(lines.length <= 1) return escHtml(summary);
-  return lines.map(l=>`<span class="sum-point">${escHtml(l)}</span>`).join('<span class="sum-sep"> · </span>');
+  if(lines.length <= 1) return '<span style="display:block;padding-left:1.1rem;text-indent:-1.1rem">• '+escHtml(summary)+'</span>';
+  return lines.map(l=>'<span style="display:block;padding-left:1.1rem;text-indent:-1.1rem">• '+escHtml(l)+'</span>').join('');
 }
 
 function renderArticles(data){
@@ -355,6 +355,7 @@ function renderArticles(data){
           ? `<a href="${sourceUrl}" target="_blank" rel="noopener" class="read-more">View Source ↗</a>`
           : '<span class="read-more" style="opacity:.4">No source link</span>'}
         <button class="copy-btn" onclick="copyText(this,'${encodeURIComponent(a.headline+'\n\n'+a.summary)}')">📋 Copy</button>
+        <button class="bookmark-btn ${isBookmarked(a.id)?'saved':''}" onclick="toggleBookmark(this,${JSON.stringify(a.id)},${JSON.stringify(a.headline)})" title="Bookmark">${isBookmarked(a.id)?'🔖':'🏷️'}</button>
       </div>
     </div>`;
   }).join('');
@@ -420,11 +421,12 @@ document.querySelectorAll('.qd-btn').forEach(btn=>{
     document.querySelectorAll('.qd-btn').forEach(b=>b.classList.remove('active'));
     this.classList.add('active');
     if(offset <= 2){
-      state.date = todayStr(offset);
+      state.date      = todayStr(offset);
+      state.date_from = null;
       document.getElementById('dateInput').value = state.date;
     } else {
-      // For 7/15 days, we'll just clear date filter to show more
-      state.date = null;
+      state.date      = null;
+      state.date_from = todayStr(offset);
       document.getElementById('dateInput').value = '';
     }
     state.page = 1;
@@ -451,6 +453,17 @@ document.getElementById('searchInput').addEventListener('input', e=>{
     fetchArticles();
   }, 400);
 });
+
+// ── Bookmarks ────────────────────────────────────────────────────────────────
+function getBookmarks(){ try{ return JSON.parse(localStorage.getItem('ca_bookmarks')||'{}'); }catch(e){ return {}; } }
+function saveBookmarks(bm){ localStorage.setItem('ca_bookmarks', JSON.stringify(bm)); }
+function isBookmarked(id){ return !!getBookmarks()[id]; }
+function toggleBookmark(btn, id, headline){
+  const bm = getBookmarks();
+  if(bm[id]){ delete bm[id]; btn.textContent='🏷️'; btn.classList.remove('saved'); btn.title='Bookmark'; }
+  else { bm[id]=headline; btn.textContent='🔖'; btn.classList.add('saved'); btn.title='Bookmarked!'; }
+  saveBookmarks(bm);
+}
 
 // ── Boot ─────────────────────────────────────────────────────────────────────
 init();

@@ -64,7 +64,9 @@ if HAS_FASTAPI:
         category: Optional[str] = Query(None, description="Category filter"),
         min_confidence: float = Query(0.80, description="Minimum confidence score"),
         limit: int = Query(15, le=200),
-        page: int = Query(1, ge=1)
+        page: int = Query(1, ge=1),
+        search: Optional[str] = Query(None, description="Search in headline/summary"),
+        date_from: Optional[str] = Query(None, description="Date range start YYYY-MM-DD")
     ):
         import math
         offset = (page - 1) * limit
@@ -73,12 +75,16 @@ if HAS_FASTAPI:
             category_filter=category,
             min_confidence=min_confidence,
             limit=limit,
-            offset=offset
+            offset=offset,
+            date_from=date_from,
+            search=search
         )
         total = get_article_count(
             date_filter=date,
             category_filter=category,
-            min_confidence=min_confidence
+            min_confidence=min_confidence,
+            date_from=date_from,
+            search=search
         )
         pages = math.ceil(total / limit) if total > 0 else 1
         return {
@@ -186,14 +192,16 @@ else:
         def _get_news(self, query):
             import math
             date_filter = query.get('date', [None])[0]
-            category = query.get('category', [None])[0]
-            min_conf = float(query.get('min_confidence', ['0.80'])[0])
-            limit = int(query.get('limit', ['15'])[0])
-            page = int(query.get('page', ['1'])[0])
-            offset = (page - 1) * limit
-            articles = get_articles(date_filter, category, min_conf, limit, offset)
-            total = get_article_count(date_filter, category, min_conf)
-            pages = math.ceil(total / limit) if total > 0 else 1
+            date_from   = query.get('date_from', [None])[0]
+            category    = query.get('category', [None])[0]
+            search      = query.get('search', [None])[0]
+            min_conf    = float(query.get('min_confidence', ['0.80'])[0])
+            limit       = int(query.get('limit', ['15'])[0])
+            page        = int(query.get('page', ['1'])[0])
+            offset      = (page - 1) * limit
+            articles    = get_articles(date_filter, category, min_conf, limit, offset, date_from, search)
+            total       = get_article_count(date_filter, category, min_conf, date_from, search)
+            pages       = math.ceil(total / limit) if total > 0 else 1
             return {
                 "articles": articles,
                 "count": len(articles),
