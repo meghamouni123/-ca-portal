@@ -19,7 +19,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 
 /* ── HEADER ── */
 header{background:linear-gradient(135deg,var(--primary-dark) 0%,var(--primary) 60%,#1e40af 100%);color:#fff;padding:0 24px;position:sticky;top:0;z-index:1000;box-shadow:0 4px 20px rgba(0,0,0,.3)}
-.hinner{max-width:1440px;margin:0 auto;display:flex;align-items:center;height:64px;gap:16px}
+.hinner{max-width:100%;margin:0 auto;display:flex;align-items:center;height:64px;gap:16px;padding:0 8px}
 .brand{display:flex;align-items:center;gap:11px;text-decoration:none;color:#fff;flex-shrink:0}
 .brand-icon{width:40px;height:40px;background:linear-gradient(135deg,var(--accent),#f97316);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
 .brand h1{font-size:18px;font-weight:800;letter-spacing:-.5px;line-height:1.1}
@@ -33,7 +33,7 @@ header{background:linear-gradient(135deg,var(--primary-dark) 0%,var(--primary) 6
 .hbtn:disabled{opacity:.6;cursor:not-allowed;transform:none}
 
 /* ── LAYOUT ── */
-.layout{display:flex;max-width:1440px;margin:0 auto;width:100%;padding:20px 16px;gap:20px;flex:1}
+.layout{display:flex;max-width:100%;margin:0 auto;width:100%;padding:20px 24px;gap:20px;flex:1}
 
 /* ── SIDEBAR ── */
 .sidebar{width:256px;flex-shrink:0;display:flex;flex-direction:column;gap:14px}
@@ -164,16 +164,30 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
 @media(max-width:900px){
   .layout{flex-direction:column;padding:12px}
   .sidebar{width:100%;flex-direction:row;flex-wrap:wrap;gap:10px}
-  .fc{flex:1;min-width:180px}
+  .fc{flex:1;min-width:160px}
   .hstats{display:none}
   #grid.gv{grid-template-columns:1fr}
   .viz-grid{grid-template-columns:1fr}
   .viz-wide{grid-column:auto}
+  .cat-list{flex-direction:row;flex-wrap:wrap}
+  .cb{min-width:140px}
 }
 @media(max-width:600px){
   .brand span{display:none}
-  .hinner{padding:0 12px}
-  .cheadline{font-size:13.5px}
+  .hinner{padding:0 10px;height:56px}
+  .hbtn{padding:7px 12px;font-size:12px}
+  .cheadline{font-size:13px}
+  .layout{padding:8px}
+  .sidebar{gap:8px}
+  .fc{padding:12px}
+  .card .cbody{padding:12px}
+  .cbullets li{font-size:12px}
+  .mbox{margin:8px;max-height:92vh}
+  .mbody{padding:14px 16px}
+  .mhead{padding:14px 16px}
+  .viz-section{padding:0 8px 16px}
+  #grid.gv{grid-template-columns:1fr}
+  .rbar{flex-direction:column;align-items:flex-start;gap:6px}
 }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
