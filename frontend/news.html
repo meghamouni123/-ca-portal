@@ -80,6 +80,10 @@
   .rel-fill{height:100%;border-radius:2px;transition:width .5s ease}
   .card-headline{font-family:'Playfair Display',serif;font-size:1.15rem;font-weight:700;line-height:1.4;color:var(--ink);margin-bottom:.85rem}
   .card-summary{font-size:.9rem;line-height:1.75;color:#374151}
+  .sum-point{display:inline}
+  .sum-sep{color:var(--muted);font-weight:700;font-size:.8rem}
+  .source-link{text-decoration:none;transition:color .2s}
+  .source-link:hover{color:var(--accent)!important}
   .card-footer{display:flex;align-items:center;gap:1rem;margin-top:1.2rem;padding-top:1rem;border-top:1px solid var(--border)}
   .read-more{text-decoration:none;font-size:.82rem;font-weight:600;color:var(--accent2);display:flex;align-items:center;gap:.3rem;transition:color .2s}
   .read-more:hover{color:var(--accent)}
@@ -189,10 +193,6 @@
   <main>
     <div class="toolbar">
       <div class="result-info" id="resultInfo">Loading…</div>
-      <select class="sort-select" id="sortSelect">
-        <option value="newest">Newest First</option>
-        <option value="relevance">Highest Relevance</option>
-      </select>
     </div>
     <div id="articleList"></div>
     <div class="pagination" id="pagination"></div>
@@ -258,10 +258,7 @@ async function fetchArticles(){
   try{
     const res = await fetch(`${API}/api/news?${params}`);
     if(!res.ok) throw new Error('API error');
-    let data = await res.json();
-    if(state.sort === 'relevance'){
-      data.articles.sort((a,b)=>b.confidence - a.confidence);
-    }
+    const data = await res.json();
     renderArticles(data);
   } catch(e){
     document.getElementById('articleList').innerHTML = `
@@ -301,7 +298,20 @@ async function fetchCounts(){
 }
 
 // ── Render ────────────────────────────────────────────────────────────────────
-function renderArticles({articles, total, page, pages}){
+function formatSummary(summary){
+  if(!summary) return '';
+  // Split on newlines or bullet-like separators, render as inline points separated by " · "
+  const lines = summary.split(/\n+/).map(l=>l.replace(/^[\-•*]\s*/,'').trim()).filter(Boolean);
+  if(lines.length <= 1) return escHtml(summary);
+  return lines.map(l=>`<span class="sum-point">${escHtml(l)}</span>`).join('<span class="sum-sep"> · </span>');
+}
+
+function renderArticles(data){
+  const articles = data.articles || [];
+  const total    = data.total || data.count || articles.length;
+  const page     = data.page  || state.page;
+  const pages    = data.pages || Math.ceil(total / state.limit) || 1;
+
   const list = document.getElementById('articleList');
   const info = document.getElementById('resultInfo');
 
@@ -324,11 +334,14 @@ function renderArticles({articles, total, page, pages}){
     const pct = Math.round(a.confidence*100);
     const relColor = pct>=90?'#16a34a':pct>=80?'#ca8a04':'#dc2626';
     const delay = i*0.04;
+    const sourceUrl = a.url || a.source_url || '';
     return `
     <div class="article-card" style="animation-delay:${delay}s">
       <div class="card-meta">
         <span class="cat-badge ${cls}">${a.category}</span>
-        <span class="source-label">📰 ${a.source||'Unknown'}</span>
+        ${sourceUrl
+          ? `<a href="${sourceUrl}" target="_blank" rel="noopener" class="source-label source-link" title="Visit source">📰 ${escHtml(a.source||'Source')} ↗</a>`
+          : `<span class="source-label">📰 ${escHtml(a.source||'Unknown')}</span>`}
         <span class="relevance-chip" title="Relevance score: ${pct}%">
           <div class="rel-bar"><div class="rel-fill" style="width:${pct}%;background:${relColor}"></div></div>
           ${pct}%
@@ -336,10 +349,10 @@ function renderArticles({articles, total, page, pages}){
         <span class="date-label">${formatDate(a.date)}</span>
       </div>
       <div class="card-headline">${escHtml(a.headline)}</div>
-      <div class="card-summary">${escHtml(a.summary)}</div>
+      <div class="card-summary">${formatSummary(a.summary)}</div>
       <div class="card-footer">
-        ${a.url
-          ? `<a href="${a.url}" target="_blank" rel="noopener" class="read-more">Read More ↗</a>`
+        ${sourceUrl
+          ? `<a href="${sourceUrl}" target="_blank" rel="noopener" class="read-more">View Source ↗</a>`
           : '<span class="read-more" style="opacity:.4">No source link</span>'}
         <button class="copy-btn" onclick="copyText(this,'${encodeURIComponent(a.headline+'\n\n'+a.summary)}')">📋 Copy</button>
       </div>
@@ -437,11 +450,6 @@ document.getElementById('searchInput').addEventListener('input', e=>{
     state.page = 1;
     fetchArticles();
   }, 400);
-});
-
-document.getElementById('sortSelect').addEventListener('change', e=>{
-  state.sort = e.target.value;
-  fetchArticles();
 });
 
 // ── Boot ─────────────────────────────────────────────────────────────────────

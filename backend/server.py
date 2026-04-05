@@ -24,7 +24,7 @@ except ImportError:
     HAS_FASTAPI = False
 
 from database import (
-    init_db, get_articles, get_categories, get_dates_with_articles,
+    init_db, get_articles, get_article_count, get_categories, get_dates_with_articles,
     get_stats, insert_article
 )
 
@@ -63,9 +63,11 @@ if HAS_FASTAPI:
         date: Optional[str] = Query(None, description="Date filter YYYY-MM-DD"),
         category: Optional[str] = Query(None, description="Category filter"),
         min_confidence: float = Query(0.80, description="Minimum confidence score"),
-        limit: int = Query(50, le=200),
-        offset: int = Query(0, ge=0)
+        limit: int = Query(15, le=200),
+        page: int = Query(1, ge=1)
     ):
+        import math
+        offset = (page - 1) * limit
         articles = get_articles(
             date_filter=date,
             category_filter=category,
@@ -73,9 +75,18 @@ if HAS_FASTAPI:
             limit=limit,
             offset=offset
         )
+        total = get_article_count(
+            date_filter=date,
+            category_filter=category,
+            min_confidence=min_confidence
+        )
+        pages = math.ceil(total / limit) if total > 0 else 1
         return {
             "articles": articles,
             "count": len(articles),
+            "total": total,
+            "page": page,
+            "pages": pages,
             "filters": {"date": date, "category": category, "min_confidence": min_confidence}
         }
 
@@ -173,13 +184,23 @@ else:
                     self._serve_json({"error": str(e)}, 500)
 
         def _get_news(self, query):
+            import math
             date_filter = query.get('date', [None])[0]
             category = query.get('category', [None])[0]
             min_conf = float(query.get('min_confidence', ['0.80'])[0])
-            limit = int(query.get('limit', ['50'])[0])
-            offset = int(query.get('offset', ['0'])[0])
+            limit = int(query.get('limit', ['15'])[0])
+            page = int(query.get('page', ['1'])[0])
+            offset = (page - 1) * limit
             articles = get_articles(date_filter, category, min_conf, limit, offset)
-            return {"articles": articles, "count": len(articles)}
+            total = get_article_count(date_filter, category, min_conf)
+            pages = math.ceil(total / limit) if total > 0 else 1
+            return {
+                "articles": articles,
+                "count": len(articles),
+                "total": total,
+                "page": page,
+                "pages": pages
+            }
 
         def _serve_json(self, data, status=200):
             body = json.dumps(data, default=str).encode('utf-8')

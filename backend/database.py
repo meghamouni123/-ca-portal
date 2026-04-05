@@ -219,6 +219,33 @@ def get_articles(
     return rows
 
 
+def get_article_count(
+    date_filter:     Optional[str] = None,
+    category_filter: Optional[str] = None,
+    min_confidence:  float = 0.8,
+    date_from:       Optional[str] = None,
+) -> int:
+    conn = get_connection()
+    cur  = conn.cursor()
+    ph   = _ph()
+
+    q      = f"SELECT COUNT(*) FROM exam_ca_articles WHERE confidence >= {ph}"
+    params = [min_confidence]
+
+    if date_filter:
+        q += f" AND date = {ph}"; params.append(date_filter)
+    elif date_from:
+        q += f" AND date >= {ph}"; params.append(date_from)
+
+    if category_filter and category_filter != 'All':
+        q += f" AND category = {ph}"; params.append(category_filter)
+
+    cur.execute(q, params)
+    count = cur.fetchone()[0]
+    conn.close()
+    return count
+
+
 def get_categories() -> List[str]:
     conn = get_connection()
     cur  = conn.cursor()
