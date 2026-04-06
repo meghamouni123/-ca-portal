@@ -33,8 +33,21 @@ STOPWORDS = {
 
 
 def _split_sentences(text: str) -> List[str]:
-    sents = re.split(r'(?<=[.!?])\s+', text.strip())
-    return [s.strip() for s in sents if len(s.split()) >= 6]
+    # Abbreviations that should NOT trigger a sentence split
+    ABBREVS = r'(?:Mr|Mrs|Ms|Dr|Prof|Sr|Jr|St|vs|etc|approx|dept|govt|min|max|avg|no|vol|fig|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Oct|Nov|Dec|U\.S|U\.K|Rs)'
+    INITIALS = r'(?:[A-Z])'
+
+    # Protect abbreviations: replace their dot with a placeholder
+    protected = re.sub(rf'\b({ABBREVS})\.', r'\1<DOT>', text.strip())
+    # Protect initials like "A. B. Kumar"
+    protected = re.sub(rf'\b({INITIALS})\.(?=\s)', r'\1<DOT>', protected)
+
+    # Now split on sentence-ending punctuation
+    sents = re.split(r'(?<=[.!?])\s+', protected)
+
+    # Restore placeholders and filter short
+    sents = [s.replace('<DOT>', '.').strip() for s in sents]
+    return [s for s in sents if len(s.split()) >= 6]
 
 
 def _word_freq(sentences: List[str]) -> dict:
