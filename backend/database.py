@@ -61,34 +61,38 @@ def init_db():
     cur  = conn.cursor()
 
     if USE_PG:
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS exam_ca_articles (
-                id          SERIAL PRIMARY KEY,
-                date        TEXT NOT NULL,
-                category    TEXT NOT NULL,
-                headline    TEXT NOT NULL,
-                summary     TEXT NOT NULL,
-                source      TEXT,
-                url         TEXT,
-                url_hash    TEXT UNIQUE,
-                confidence  REAL DEFAULT 0.0,
-                word_count  INTEGER DEFAULT 0,
-                fetched_at  TEXT DEFAULT CURRENT_TIMESTAMP,
-                created_at  TEXT DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        # Add url column if existing DB doesn't have it
         try:
-            cur.execute("ALTER TABLE exam_ca_articles ADD COLUMN url TEXT")
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS exam_ca_articles (
+                    id          SERIAL PRIMARY KEY,
+                    date        TEXT NOT NULL,
+                    category    TEXT NOT NULL,
+                    headline    TEXT NOT NULL,
+                    summary     TEXT NOT NULL,
+                    source      TEXT,
+                    url         TEXT,
+                    url_hash    TEXT UNIQUE,
+                    confidence  REAL DEFAULT 0.0,
+                    word_count  INTEGER DEFAULT 0,
+                    fetched_at  TEXT DEFAULT CURRENT_TIMESTAMP,
+                    created_at  TEXT DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
             conn.commit()
-        except Exception:
-            pass
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS categories (
-                id   SERIAL PRIMARY KEY,
-                name TEXT UNIQUE NOT NULL
-            )
-        """)
+        except Exception as e:
+            conn.rollback()
+            logger.warning(f"exam_ca_articles table create skipped: {e}")
+        try:
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS categories (
+                    id   SERIAL PRIMARY KEY,
+                    name TEXT UNIQUE NOT NULL
+                )
+            """)
+            conn.commit()
+        except Exception as e:
+            conn.rollback()
+            logger.warning(f"categories table create skipped: {e}")
         for idx in [
             "CREATE INDEX IF NOT EXISTS idx_date_category ON exam_ca_articles(date, category)",
             "CREATE INDEX IF NOT EXISTS idx_date          ON exam_ca_articles(date)",
@@ -96,7 +100,17 @@ def init_db():
             "CREATE INDEX IF NOT EXISTS idx_confidence    ON exam_ca_articles(confidence)",
             "CREATE INDEX IF NOT EXISTS idx_url_hash      ON exam_ca_articles(url_hash)",
         ]:
-            cur.execute(idx)
+            try:
+                cur.execute(idx)
+                conn.commit()
+            except Exception:
+                conn.rollback()
+        # Add url column if not exists — use separate try/rollback
+        try:
+            cur.execute("ALTER TABLE exam_ca_articles ADD COLUMN url TEXT")
+            conn.commit()
+        except Exception:
+            conn.rollback()
     else:
         cur.executescript("""
             CREATE TABLE IF NOT EXISTS exam_ca_articles (
@@ -140,6 +154,37 @@ def init_db():
     for cat in categories:
         try:
             cur.execute(f"INSERT INTO categories (name) SELECT {ph} WHERE NOT EXISTS (SELECT 1 FROM categories WHERE name={ph})", (cat, cat))
+        except Exception:
+            pass
+
+    conn.commit()
+
+    # Backfill url for existing demo data rows that have url_hash but no url
+    demo_url_map = {
+        'rbi_repo_feb2026':       'https://rbi.org.in/news/2026/repo-rate',
+        'isro_nvs02_jan2026':     'https://isro.gov.in/nvs02-launch',
+        'india_france_mous_2026': 'https://mea.gov.in/india-france-mous',
+        'india_awg2026':          'https://sports.gov.in/asian-winter-games-2026',
+        'undp_hdi_2025':          'https://undp.org/hdi-2025',
+        'vande_bharat_10_2026':   'https://indianrailways.gov.in/vande-bharat-2026',
+        'padma_awards_2026':      'https://mha.gov.in/padma-2026',
+        'wgs_dubai_2026':         'https://worldgovernmentsummit.org/2026',
+        'budget_2026_27':         'https://indiabudget.gov.in/2026-27',
+        'pm_surya_ghar_1cr':      'https://pmsuryaghar.gov.in/milestone',
+        'aiims_proton_2026':      'https://aiims.edu/proton-therapy-centre',
+        'forex_reserves_720bn':   'https://rbi.org.in/forex-reserves-jan2026',
+        'nari_shakti_2026':       'https://loksabha.nic.in/women-reservation',
+        'women_science_day_2026': 'https://dst.gov.in/women-science-day-2026',
+        'kolkata_book_fair_2026': 'https://kolkatabookfair.net/2026',
+        'gst_56th_council':       'https://gstcouncil.gov.in/56th-meeting',
+    }
+    ph2 = _ph()
+    for url_hash, url in demo_url_map.items():
+        try:
+            if USE_PG:
+                cur.execute("UPDATE exam_ca_articles SET url=%s WHERE url_hash=%s AND (url IS NULL OR url='')", (url, url_hash))
+            else:
+                cur.execute("UPDATE exam_ca_articles SET url=? WHERE url_hash=? AND (url IS NULL OR url='')", (url, url_hash))
         except Exception:
             pass
 
