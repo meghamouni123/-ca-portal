@@ -402,7 +402,7 @@ function renderArticles(data){
           ? `<a href="${sourceUrl}" target="_blank" rel="noopener" class="read-more">View Source ↗</a>`
           : '<span class="read-more" style="opacity:.4">No source link</span>'}
         <button class="copy-btn" onclick="copyText(this,'${encodeURIComponent(a.headline+'\n\n'+a.summary)}')">📋 Copy</button>
-        <button class="bookmark-btn ${isBookmarked(a.id)?'saved':''}" onclick="toggleBookmark(this,${a.id},${JSON.stringify({id:a.id,headline:a.headline,summary:a.summary,category:a.category,source:a.source,date:a.date,url:a.url||a.source_url||'',confidence:a.confidence})})" title="Bookmark">${isBookmarked(a.id)?'🔖':'🏷️'}</button>
+        <button class="bookmark-btn ${isBookmarked(a.id)?'saved':''}" data-article="${escAttr(JSON.stringify({id:a.id,headline:a.headline,summary:a.summary,category:a.category,source:a.source,date:a.date,url:a.url||a.source_url||'',confidence:a.confidence}))}" onclick="toggleBookmark(this,${a.id})" title="Bookmark">${isBookmarked(a.id)?'🔖':'🏷️'}</button>
       </div>
     </div>`;
   }).join('');
@@ -505,10 +505,23 @@ document.getElementById('searchInput').addEventListener('input', e=>{
 function getBookmarks(){ try{ return JSON.parse(localStorage.getItem('ca_bookmarks')||'{}'); }catch(e){ return {}; } }
 function saveBookmarks(bm){ localStorage.setItem('ca_bookmarks', JSON.stringify(bm)); }
 function isBookmarked(id){ return !!getBookmarks()[id]; }
-function toggleBookmark(btn, id, article){
+function escAttr(str){ return str.replace(/&/g,'&amp;').replace(/"/g,'&quot;'); }
+function toggleBookmark(btn, id){
   const bm = getBookmarks();
-  if(bm[id]){ delete bm[id]; btn.textContent='🏷️'; btn.classList.remove('saved'); btn.title='Bookmark'; }
-  else { bm[id]=article; btn.textContent='🔖'; btn.classList.add('saved'); btn.title='Bookmarked!'; }
+  if(bm[id]){
+    delete bm[id];
+    btn.textContent='🏷️';
+    btn.classList.remove('saved');
+    btn.title='Bookmark';
+  } else {
+    try{
+      const article = JSON.parse(btn.getAttribute('data-article'));
+      bm[id] = article;
+    } catch(e){ bm[id] = {id}; }
+    btn.textContent='🔖';
+    btn.classList.add('saved');
+    btn.title='Bookmarked!';
+  }
   saveBookmarks(bm);
 }
 

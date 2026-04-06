@@ -124,6 +124,41 @@ if HAS_FASTAPI:
         )
         return {"date": today, "articles": articles, "count": len(articles)}
 
+    @app.get("/api/fix-urls")
+    async def fix_urls():
+        """One-time fix: update demo article URLs in DB."""
+        from database import get_connection
+        demo_url_map = {
+            'rbi_repo_feb2026':       'https://rbi.org.in/news/2026/repo-rate',
+            'isro_nvs02_jan2026':     'https://isro.gov.in/nvs02-launch',
+            'india_france_mous_2026': 'https://mea.gov.in/india-france-mous',
+            'india_awg2026':          'https://sports.gov.in/asian-winter-games-2026',
+            'undp_hdi_2025':          'https://undp.org/hdi-2025',
+            'vande_bharat_10_2026':   'https://indianrailways.gov.in/vande-bharat-2026',
+            'padma_awards_2026':      'https://mha.gov.in/padma-2026',
+            'wgs_dubai_2026':         'https://worldgovernmentsummit.org/2026',
+            'budget_2026_27':         'https://indiabudget.gov.in/2026-27',
+            'pm_surya_ghar_1cr':      'https://pmsuryaghar.gov.in/milestone',
+            'aiims_proton_2026':      'https://aiims.edu/proton-therapy-centre',
+            'forex_reserves_720bn':   'https://rbi.org.in/forex-reserves-jan2026',
+            'nari_shakti_2026':       'https://loksabha.nic.in/women-reservation',
+            'women_science_day_2026': 'https://dst.gov.in/women-science-day-2026',
+            'kolkata_book_fair_2026': 'https://kolkatabookfair.net/2026',
+            'gst_56th_council':       'https://gstcouncil.gov.in/56th-meeting',
+        }
+        conn = get_connection()
+        cur = conn.cursor()
+        updated = 0
+        for url_hash, url in demo_url_map.items():
+            try:
+                cur.execute("UPDATE exam_ca_articles SET url=%s WHERE url_hash=%s AND (url IS NULL OR url='')", (url, url_hash))
+                updated += cur.rowcount
+            except Exception as e:
+                conn.rollback()
+        conn.commit()
+        conn.close()
+        return {"updated": updated, "message": f"{updated} articles URL updated!"}
+
     @app.post("/api/fetch")
     async def trigger_fetch(max_feeds: int = 5):
         """Manually trigger a pipeline run."""

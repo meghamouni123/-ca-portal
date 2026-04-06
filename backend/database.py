@@ -206,7 +206,11 @@ def insert_article(data: Dict[str, Any]) -> bool:
                 INSERT INTO exam_ca_articles
                     (date, category, headline, summary, source, url, url_hash, confidence, word_count, fetched_at)
                 VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
-                ON CONFLICT (url_hash) DO NOTHING
+                ON CONFLICT (url_hash) DO UPDATE SET
+                    url        = EXCLUDED.url,
+                    summary    = EXCLUDED.summary,
+                    confidence = EXCLUDED.confidence,
+                    fetched_at = EXCLUDED.fetched_at
             """, (
                 data.get('date', str(date.today())),
                 data['category'], data['headline'], data['summary'],
