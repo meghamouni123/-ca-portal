@@ -69,6 +69,7 @@ def init_db():
                 headline    TEXT NOT NULL,
                 summary     TEXT NOT NULL,
                 source      TEXT,
+                url         TEXT,
                 url_hash    TEXT UNIQUE,
                 confidence  REAL DEFAULT 0.0,
                 word_count  INTEGER DEFAULT 0,
@@ -76,6 +77,12 @@ def init_db():
                 created_at  TEXT DEFAULT CURRENT_TIMESTAMP
             )
         """)
+        # Add url column if existing DB doesn't have it
+        try:
+            cur.execute("ALTER TABLE exam_ca_articles ADD COLUMN url TEXT")
+            conn.commit()
+        except Exception:
+            pass
         cur.execute("""
             CREATE TABLE IF NOT EXISTS categories (
                 id   SERIAL PRIMARY KEY,
@@ -99,6 +106,7 @@ def init_db():
                 headline    TEXT NOT NULL,
                 summary     TEXT NOT NULL,
                 source      TEXT,
+                url         TEXT,
                 url_hash    TEXT UNIQUE,
                 confidence  REAL DEFAULT 0.0,
                 word_count  INTEGER DEFAULT 0,
@@ -115,6 +123,12 @@ def init_db():
             CREATE INDEX IF NOT EXISTS idx_confidence    ON exam_ca_articles(confidence);
             CREATE INDEX IF NOT EXISTS idx_url_hash      ON exam_ca_articles(url_hash);
         """)
+        # Migrate: add url column if not exists
+        try:
+            cur.execute("ALTER TABLE exam_ca_articles ADD COLUMN url TEXT")
+            conn.commit()
+        except Exception:
+            pass
 
     categories = [
         'Economy & Banking', 'Polity & Governance', 'International Relations',
@@ -145,25 +159,25 @@ def insert_article(data: Dict[str, Any]) -> bool:
         if USE_PG:
             cur.execute("""
                 INSERT INTO exam_ca_articles
-                    (date, category, headline, summary, source, url_hash, confidence, word_count, fetched_at)
-                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                    (date, category, headline, summary, source, url, url_hash, confidence, word_count, fetched_at)
+                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
                 ON CONFLICT (url_hash) DO NOTHING
             """, (
                 data.get('date', str(date.today())),
                 data['category'], data['headline'], data['summary'],
-                data.get('source', ''), data.get('url_hash', ''),
+                data.get('source', ''), data.get('url', ''), data.get('url_hash', ''),
                 data.get('confidence', 0.0), data.get('word_count', 0),
                 data.get('fetched_at', datetime.now().isoformat())
             ))
         else:
             cur.execute("""
                 INSERT OR IGNORE INTO exam_ca_articles
-                    (date, category, headline, summary, source, url_hash, confidence, word_count, fetched_at)
-                VALUES (?,?,?,?,?,?,?,?,?)
+                    (date, category, headline, summary, source, url, url_hash, confidence, word_count, fetched_at)
+                VALUES (?,?,?,?,?,?,?,?,?,?)
             """, (
                 data.get('date', str(date.today())),
                 data['category'], data['headline'], data['summary'],
-                data.get('source', ''), data.get('url_hash', ''),
+                data.get('source', ''), data.get('url', ''), data.get('url_hash', ''),
                 data.get('confidence', 0.0), data.get('word_count', 0),
                 data.get('fetched_at', datetime.now().isoformat())
             ))
