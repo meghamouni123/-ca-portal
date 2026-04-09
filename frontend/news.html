@@ -275,6 +275,13 @@ async function fetchArticles(){
 // ── Fetch category counts ────────────────────────────────────────────────────
 async function fetchCounts(){
   try{
+    const params = new URLSearchParams();
+    if(state.date)      params.set('date', state.date);
+    if(state.date_from) params.set('date_from', state.date_from);
+    const res  = await fetch(`${API}/api/category-counts?${params}`);
+    const data = await res.json();
+    const counts = data.by_category || {};
+    document.getElementById('count-all').textContent = data.total || 0;
     const keyMap = {
       'Economy & Banking':'eco','Polity & Governance':'pol',
       'International Relations':'int','Science & Technology':'sci',
@@ -283,23 +290,6 @@ async function fetchCounts(){
       'Important Days & Obituaries':'imp','Summits & Conferences':'sum',
       'National News':'nat','State News':'sta'
     };
-
-    // Fetch all articles for the current date range (no category filter)
-    const params = new URLSearchParams({limit:1000, page:1});
-    if(state.date)      params.set('date', state.date);
-    if(state.date_from) params.set('date_from', state.date_from);
-    const res = await fetch(`${API}/api/news?${params}`);
-    const data = await res.json();
-    const articles = data.articles || [];
-
-    // Count per category from fetched articles
-    const counts = {};
-    articles.forEach(a=>{ counts[a.category]=(counts[a.category]||0)+1; });
-
-    // All Categories = sum of all category counts (not pagination total)
-    const allCount = articles.length;
-    document.getElementById('count-all').textContent = allCount;
-
     Object.entries(keyMap).forEach(([cat,key])=>{
       const el = document.getElementById(`count-${key}`);
       if(el) el.textContent = counts[cat]||0;
