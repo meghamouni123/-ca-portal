@@ -162,7 +162,7 @@ function removeBookmark(id){
 }
 
 function clearAll(){
-  if(!confirm('All bookmarks clear ஆகும். சரியா?')) return;
+  if(!confirm('Are you sure? All bookmarks will be cleared.')) return;
   localStorage.removeItem('ca_bookmarks');
   render();
 }
@@ -187,8 +187,8 @@ function render(){
       <div class="empty-state">
         <div class="empty-icon">🔖</div>
         <h3>No bookmarks yet</h3>
-        <p>Current Affairs page-ல் 🏷️ click பண்ணி articles save பண்ணுங்க.</p>
-        <p style="margin-top:.75rem"><a href="news.html">→ Current Affairs பார்க்க</a></p>
+        <p>Click 🏷️ on any article in Current Affairs to save it here.</p>
+        <p style="margin-top:.75rem"><a href="news.html">→ Browse Current Affairs</a></p>
       </div>`;
     return;
   }
