@@ -1,107 +1,7 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dashboard — CA Daily</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<script src="config.js"></script>
-<style>
-  :root{
-    --ink:#0f1117;--paper:#faf8f3;--accent:#c8102e;--accent2:#1a3a5c;
-    --gold:#d4a843;--muted:#6b7280;--border:#e5e0d5;--card-bg:#ffffff;
-    --green:#16a34a;
-  }
-  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-  html{scroll-behavior:smooth}
-  body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink)}
-
-  /* NAV */
-  nav{position:sticky;top:0;z-index:200;background:rgba(250,248,243,.95);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:60px;gap:1rem}
-  .logo{font-family:'Playfair Display',serif;font-size:1.3rem;font-weight:900;color:var(--ink);text-decoration:none;white-space:nowrap}
-  .logo span{color:var(--accent)}
-  .nav-right{display:flex;align-items:center;gap:1rem}
-  .nav-link{text-decoration:none;color:var(--muted);font-size:.88rem;font-weight:500;transition:color .2s}
-  .nav-link:hover,.nav-link.active{color:var(--ink)}
-  .refresh-btn{background:var(--ink);color:#fff;border:none;padding:.4rem 1rem;border-radius:6px;font-family:'DM Sans',sans-serif;font-size:.82rem;font-weight:600;cursor:pointer;transition:background .2s}
-  .refresh-btn:hover{background:var(--accent2)}
-  .refresh-btn.spinning{opacity:.7;pointer-events:none}
-
-  /* DASHBOARD */
-  .dash-wrap{max-width:1300px;margin:0 auto;padding:2rem}
-  .dash-header{margin-bottom:2rem}
-  .dash-header h1{font-family:'Playfair Display',serif;font-size:2rem;font-weight:900;letter-spacing:-.5px}
-  .dash-header p{color:var(--muted);font-size:.9rem;margin-top:.35rem}
-  .last-updated{font-size:.78rem;color:var(--muted);margin-top:.5rem}
-  .last-updated strong{color:var(--green)}
-
-  /* KPI CARDS */
-  .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1.25rem;margin-bottom:2rem}
-  .kpi-card{background:#fff;border:1px solid var(--border);border-radius:16px;padding:1.5rem;transition:transform .2s,box-shadow .2s;animation:fadeUp .5s ease both}
-  .kpi-card:hover{transform:translateY(-4px);box-shadow:0 12px 32px rgba(0,0,0,.08)}
-  .kpi-icon{font-size:1.8rem;margin-bottom:.75rem}
-  .kpi-num{font-family:'Playfair Display',serif;font-size:2.2rem;font-weight:900;line-height:1;margin-bottom:.3rem}
-  .kpi-label{font-size:.8rem;color:var(--muted);font-weight:500}
-  .kpi-delta{font-size:.75rem;font-weight:600;margin-top:.25rem}
-  .delta-up{color:var(--green)}
-  .delta-neutral{color:var(--muted)}
-
-  /* CHART GRID */
-  .chart-grid{display:grid;grid-template-columns:2fr 1fr;gap:1.25rem;margin-bottom:1.25rem}
-  .chart-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.25rem;margin-bottom:1.25rem}
-  .chart-card{background:#fff;border:1px solid var(--border);border-radius:16px;padding:1.5rem;animation:fadeUp .5s .1s ease both}
-  .chart-card.full{grid-column:1/-1}
-  .chart-title{font-size:.95rem;font-weight:700;margin-bottom:.25rem}
-  .chart-sub{font-size:.78rem;color:var(--muted);margin-bottom:1.25rem}
-  .chart-wrap{position:relative;height:260px}
-  .chart-wrap.tall{height:320px}
-  .chart-wrap.sm{height:200px}
-
-  /* RECENT TABLE */
-  .recent-table{width:100%;border-collapse:collapse;font-size:.85rem}
-  .recent-table th{text-align:left;padding:.6rem .75rem;border-bottom:2px solid var(--border);font-size:.72rem;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);font-weight:700}
-  .recent-table td{padding:.7rem .75rem;border-bottom:1px solid var(--border);vertical-align:top}
-  .recent-table tr:last-child td{border-bottom:none}
-  .recent-table tr:hover td{background:#faf8f3}
-  .cat-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:.4rem}
-  .headline-cell{font-weight:500;max-width:400px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .conf-badge{display:inline-block;padding:.15rem .55rem;border-radius:4px;font-size:.7rem;font-weight:700}
-  .conf-high{background:#dcfce7;color:#15803d}
-  .conf-med{background:#fef9c3;color:#a16207}
-
-  /* CATEGORY COLORS FOR CHARTS */
-  .skeleton{background:linear-gradient(90deg,#f0ede6 25%,#e8e4dc 50%,#f0ede6 75%);background-size:400px 100%;animation:shimmer 1.4s infinite;border-radius:8px;height:260px}
-
-  @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
-  @keyframes shimmer{0%{background-position:-400px 0}100%{background-position:400px 0}}
-
-  @media(max-width:1024px){.chart-grid{grid-template-columns:1fr}.chart-grid-3{grid-template-columns:1fr 1fr}}
-  @media(max-width:700px){.kpi-grid{grid-template-columns:repeat(2,1fr)}.chart-grid-3{grid-template-columns:1fr}}
-  @media(max-width:480px){.kpi-grid{grid-template-columns:1fr}}
-</style>
-</head>
-<body>
-
-<nav>
-  <a href="index.html" class="logo">CA<span>Daily</span></a>
-  <div class="nav-right">
-    <a href="index.html" class="nav-link">Home</a>
-    <a href="news.html" class="nav-link">Current Affairs</a>
-    <a href="dashboard.html" class="nav-link active">Dashboard</a>
-    <button class="refresh-btn" id="refreshBtn" onclick="loadAll()">↻ Refresh</button>
-  </div>
-</nav>
-
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Dashboard — CA Daily</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"><script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script><script src="config.js"></script><style>:root{--ink:#0f1117;--paper:#faf8f3;--accent:#c8102e;--accent2:#1a3a5c;--gold:#d4a843;--muted:#6b7280;--border:#e5e0d5;--card-bg:#ffffff;--green:#16a34a;}*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink)}/* NAV */nav{position:sticky;top:0;z-index:200;background:rgba(250,248,243,.95);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:60px;gap:1rem}.logo{font-family:'Playfair Display',serif;font-size:1.3rem;font-weight:900;color:var(--ink);text-decoration:none;white-space:nowrap}.logo span{color:var(--accent)}.nav-right{display:flex;align-items:center;gap:1rem}.nav-link{text-decoration:none;color:var(--muted);font-size:.88rem;font-weight:500;transition:color .2s}.nav-link:hover,.nav-link.active{color:var(--ink)}.refresh-btn{background:var(--ink);color:#fff;border:none;padding:.4rem 1rem;border-radius:6px;font-family:'DM Sans',sans-serif;font-size:.82rem;font-weight:600;cursor:pointer;transition:background .2s}.refresh-btn:hover{background:var(--accent2)}.refresh-btn.spinning{opacity:.7;pointer-events:none}/* DASHBOARD */.dash-wrap{max-width:1300px;margin:0 auto;padding:2rem}.dash-header{margin-bottom:2rem}.dash-header h1{font-family:'Playfair Display',serif;font-size:2rem;font-weight:900;letter-spacing:-.5px}.dash-header p{color:var(--muted);font-size:.9rem;margin-top:.35rem}.last-updated{font-size:.78rem;color:var(--muted);margin-top:.5rem}.last-updated strong{color:var(--green)}/* KPI CARDS */.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1.25rem;margin-bottom:2rem}.kpi-card{background:#fff;border:1px solid var(--border);border-radius:16px;padding:1.5rem;transition:transform .2s,box-shadow .2s;animation:fadeUp .5s ease both}.kpi-card:hover{transform:translateY(-4px);box-shadow:0 12px 32px rgba(0,0,0,.08)}.kpi-icon{font-size:1.8rem;margin-bottom:.75rem}.kpi-num{font-family:'Playfair Display',serif;font-size:2.2rem;font-weight:900;line-height:1;margin-bottom:.3rem}.kpi-label{font-size:.8rem;color:var(--muted);font-weight:500}.kpi-delta{font-size:.75rem;font-weight:600;margin-top:.25rem}.delta-up{color:var(--green)}.delta-neutral{color:var(--muted)}/* CHART GRID */.chart-grid{display:grid;grid-template-columns:2fr 1fr;gap:1.25rem;margin-bottom:1.25rem}.chart-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.25rem;margin-bottom:1.25rem}.chart-card{background:#fff;border:1px solid var(--border);border-radius:16px;padding:1.5rem;animation:fadeUp .5s .1s ease both}.chart-card.full{grid-column:1/-1}.chart-title{font-size:.95rem;font-weight:700;margin-bottom:.25rem}.chart-sub{font-size:.78rem;color:var(--muted);margin-bottom:1.25rem}.chart-wrap{position:relative;height:260px}.chart-wrap.tall{height:320px}.chart-wrap.sm{height:200px}/* RECENT TABLE */.recent-table{width:100%;border-collapse:collapse;font-size:.85rem}.recent-table th{text-align:left;padding:.6rem .75rem;border-bottom:2px solid var(--border);font-size:.72rem;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);font-weight:700}.recent-table td{padding:.7rem .75rem;border-bottom:1px solid var(--border);vertical-align:top}.recent-table tr:last-child td{border-bottom:none}.recent-table tr:hover td{background:#faf8f3}.cat-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:.4rem}.headline-cell{font-weight:500;max-width:400px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.conf-badge{display:inline-block;padding:.15rem .55rem;border-radius:4px;font-size:.7rem;font-weight:700}.conf-high{background:#dcfce7;color:#15803d}.conf-med{background:#fef9c3;color:#a16207}.skeleton{background:linear-gradient(90deg,#f0ede6 25%,#e8e4dc 50%,#f0ede6 75%);background-size:400px 100%;animation:shimmer 1.4s infinite;border-radius:8px;height:260px}@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}@keyframes shimmer{0%{background-position:-400px 0}100%{background-position:400px 0}}@media(max-width:1024px){.chart-grid{grid-template-columns:1fr}.chart-grid-3{grid-template-columns:1fr 1fr}}@media(max-width:700px){.kpi-grid{grid-template-columns:repeat(2,1fr)}.chart-grid-3{grid-template-columns:1fr}}@media(max-width:480px){.kpi-grid{grid-template-columns:1fr}}</style></head><body>
+<nav><a href="index.html" class="logo">CA<span>Daily</span></a><div class="nav-right"><a href="index.html" class="nav-link">Home</a><a href="news.html" class="nav-link">Current Affairs</a><a href="dashboard.html" class="nav-link active">Dashboard</a><button class="refresh-btn" id="refreshBtn" onclick="loadAll()">↻ Refresh</button></div></nav>
 <div class="dash-wrap">
-  <div class="dash-header">
-    <h1>Analytics Dashboard</h1>
-    <p>Real-time pipeline stats — articles classified, deduplicated & summarized</p>
-    <div class="last-updated" id="lastUpdated">Fetching data…</div>
-  </div>
-
+  <div class="dash-header"><h1>Analytics Dashboard</h1><p>Real-time pipeline stats — articles classified, deduplicated &amp; summarized</p><div class="last-updated" id="lastUpdated">Fetching data…</div></div>
   <!-- KPI CARDS -->
   <div class="kpi-grid" id="kpiGrid">
     <div class="kpi-card"><div class="kpi-icon">📰</div><div class="kpi-num skeleton" style="height:36px;width:80px"></div><div class="kpi-label">Total Articles</div></div>
@@ -109,406 +9,85 @@
     <div class="kpi-card"><div class="kpi-icon">📆</div><div class="kpi-num skeleton" style="height:36px;width:60px"></div><div class="kpi-label">This Week</div></div>
     <div class="kpi-card"><div class="kpi-icon">🏷️</div><div class="kpi-num skeleton" style="height:36px;width:40px"></div><div class="kpi-label">Categories</div></div>
   </div>
-
- per day (last 30 days)</div>
-      <div class="chart-wrap tall"><canvas id="dailyChart"></canvas></div>
-    </div>
+  <!-- DAILY TREND -->
+  <div class="chart-card full" style="margin-bottom:1.25rem">
+    <div class="chart-title">Daily Article Trend</div>
+    <div class="chart-sub">Articles per day (last 30 days)</div>
+    <div class="chart-wrap tall"><canvas id="dailyChart"></canvas></div>
   </div>
-
   <!-- ROW 2: Bar + Sources -->
   <div class="chart-grid">
-    <div class="chart-card">
-      <div class="chart-title">Top Categories</div>
-      <div class="chart-sub">Horizontal bar — article count</div>
-      <div class="chart-wrap"><canvas id="catBar"></canvas></div>
-    </div>
-    <div class="chart-card">
-      <div class="chart-title">Top Sources</div>
-      <div class="chart-sub">Most productive news sources</div>
-      <div class="chart-wrap"><canvas id="sourceBar"></canvas></div>
-    </div>
+    <div class="chart-card"><div class="chart-title">Top Categories</div><div class="chart-sub">Horizontal bar — article count</div><div class="chart-wrap"><canvas id="catBar"></canvas></div></div>
+    <div class="chart-card"><div class="chart-title">Top Sources</div><div class="chart-sub">Most productive news sources</div><div class="chart-wrap"><canvas id="sourceBar"></canvas></div></div>
   </div>
-
   <!-- RECENT ARTICLES TABLE -->
   <div class="chart-card">
     <div class="chart-title">Recent Articles</div>
     <div class="chart-sub">Latest 20 articles processed by the pipeline</div>
     <div style="overflow-x:auto;margin-top:.5rem">
       <table class="recent-table" id="recentTable">
-        <thead>
-          <tr>
-            <th>Category</th>
-            <th>Headline</th>
-            <th>Source</th>
-            <th>Confidence</th>
-            <th>Date</th>
-          </tr>
-        </thead>
+        <thead><tr><th>Category</th><th>Headline</th><th>Source</th><th>Confidence</th><th>Date</th></tr></thead>
         <tbody id="recentBody"><tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--muted)">Loading…</td></tr></tbody>
       </table>
     </div>
-    <div style="text-align:center;margin-top:1.25rem">
-      <a href="news.html" style="font-size:.85rem;font-weight:600;color:var(--accent2);text-decoration:none">View All Current Affairs →</a>
-    </div>
+    <div style="text-align:center;margin-top:1.25rem"><a href="news.html" style="font-size:.85rem;font-weight:600;color:var(--accent2);text-decoration:none">View All Current Affairs →</a></div>
   </div>
-
   <!-- EVALUATION REPORT -->
   <div style="margin-top:2.5rem">
-    <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.4rem">
-      <span style="font-size:1.4rem">📊</span>
-      <h2 style="font-family:'Playfair Display',serif;font-size:1.5rem;font-weight:900">Evaluation Report</h2>
-      <span style="margin-left:auto;background:var(--accent2);color:#fff;font-size:.72rem;font-weight:700;padding:.25rem .7rem;border-radius:20px">Model v1.0</span>
-    </div>
+    <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.4rem"><span style="font-size:1.4rem">📊</span><h2 style="font-family:'Playfair Display',serif;font-size:1.5rem;font-weight:900">Evaluation Report</h2><span style="margin-left:auto;background:var(--accent2);color:#fff;font-size:.72rem;font-weight:700;padding:.25rem .7rem;border-radius:20px">Model v1.0</span></div>
     <p style="color:var(--muted);font-size:.85rem;margin-bottom:1.25rem">Summarizer quality comparison using ROUGE F1 scores</p>
-
     <!-- ROUGE KPI -->
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1.25rem">
-      <div class="kpi-card" style="text-align:center">
-        <div style="font-family:'Playfair Display',serif;font-size:2rem;font-weight:900;color:var(--accent2)">0.46</div>
-        <div style="font-size:.8rem;color:var(--muted);margin-top:.3rem">Best ROUGE-1 (BART + LexRank)</div>
-      </div>
-      <div class="kpi-card" style="text-align:center">
-        <div style="font-family:'Playfair Display',serif;font-size:2rem;font-weight:900;color:var(--accent2)">0.23</div>
-        <div style="font-size:.8rem;color:var(--muted);margin-top:.3rem">Best ROUGE-2 (BART + LexRank)</div>
-      </div>
-      <div class="kpi-card" style="text-align:center">
-        <div style="font-family:'Playfair Display',serif;font-size:2rem;font-weight:900;color:var(--green)">0.38</div>
-        <div style="font-size:.8rem;color:var(--muted);margin-top:.3rem">Best ROUGE-L (BART + LexRank)</div>
-      </div>
+      <div class="kpi-card" style="text-align:center"><div style="font-family:'Playfair Display',serif;font-size:2rem;font-weight:900;color:var(--accent2)">0.46</div><div style="font-size:.8rem;color:var(--muted);margin-top:.3rem">Best ROUGE-1 (BART + LexRank)</div></div>
+      <div class="kpi-card" style="text-align:center"><div style="font-family:'Playfair Display',serif;font-size:2rem;font-weight:900;color:var(--accent2)">0.23</div><div style="font-size:.8rem;color:var(--muted);margin-top:.3rem">Best ROUGE-2 (BART + LexRank)</div></div>
+      <div class="kpi-card" style="text-align:center"><div style="font-family:'Playfair Display',serif;font-size:2rem;font-weight:900;color:var(--green)">0.38</div><div style="font-size:.8rem;color:var(--muted);margin-top:.3rem">Best ROUGE-L (BART + LexRank)</div></div>
     </div>
-
     <!-- Summary Quality Chart + ROUGE Table -->
     <div class="chart-grid" style="margin-bottom:1.25rem">
+      <div class="chart-card"><div class="chart-title">Summary Quality Comparison</div><div class="chart-sub">ROUGE F1 scores across summarization methods</div><div class="chart-wrap"><canvas id="rougeBarChart"></canvas></div></div>
       <div class="chart-card">
-        <div class="chart-title">Summary Quality Comparison</div>
-        <div class="chart-sub">ROUGE F1 scores across summarization methods</div>
-        <div class="chart-wrap"><canvas id="rougeBarChart"></canvas></div>
-      </div>
-      <div class="chart-card">
-        <div class="chart-title">ROUGE Score Table</div>
-        <div class="chart-sub">F1 scores per method — higher is better</div>
+        <div class="chart-title">ROUGE Score Table</div><div class="chart-sub">F1 scores per method — higher is better</div>
         <div style="overflow-x:auto;margin-top:.5rem">
-          <table class="recent-table">
-            <thead>
-              <tr><th>Method</th><th>ROUGE-1</th><th>ROUGE-2</th><th>ROUGE-L</th></tr>
-            </thead>
-            <tbody>
-              <tr><td>TextRank</td><td>0.38</td><td>0.16</td><td>0.30</td></tr>
-              <tr><td>LexRank</td><td>0.41</td><td>0.18</td><td>0.33</td></tr>
-              <tr><td>BART baseline</td><td>0.44</td><td>0.21</td><td>0.36</td></tr>
-              <tr>
-                <td><strong>BART + LexRank ★</strong></td>
-                <td><strong style="color:var(--accent2)">0.46</strong></td>
-                <td><strong style="color:var(--accent2)">0.23</strong></td>
-                <td><strong style="color:var(--green)">0.38</strong></td>
-              </tr>
-            </tbody>
-          </table>
+          <table class="recent-table"><thead><tr><th>Method</th><th>ROUGE-1</th><th>ROUGE-2</th><th>ROUGE-L</th></tr></thead>
+          <tbody><tr><td>TextRank</td><td>0.38</td><td>0.16</td><td>0.30</td></tr><tr><td>LexRank</td><td>0.41</td><td>0.18</td><td>0.33</td></tr><tr><td>BART baseline</td><td>0.44</td><td>0.21</td><td>0.36</td></tr><tr><td><strong>BART + LexRank ★</strong></td><td><strong style="color:var(--accent2)">0.46</strong></td><td><strong style="color:var(--accent2)">0.23</strong></td><td><strong style="color:var(--green)">0.38</strong></td></tr></tbody></table>
         </div>
-        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:.85rem 1rem;margin-top:1rem;font-size:.82rem;color:#15803d">
-          <strong>Best Method:</strong> BART + LexRank achieves the highest scores across all three ROUGE metrics, combining extractive and abstractive summarization for superior quality.
-        </div>
+        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:.85rem 1rem;margin-top:1rem;font-size:.82rem;color:#15803d"><strong>Best Method:</strong> BART + LexRank achieves the highest scores across all three ROUGE metrics, combining extractive and abstractive summarization for superior quality.</div>
       </div>
     </div>
-
     <!-- Classifier Performance -->
-    <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.8rem;margin-top:.5rem">
-      <span style="font-size:1.1rem">🎯</span>
-      <h3 style="font-size:1.05rem;font-weight:700">Classifier Performance Metrics</h3>
-    </div>
+    <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.8rem;margin-top:.5rem"><span style="font-size:1.1rem">🎯</span><h3 style="font-size:1.05rem;font-weight:700">Classifier Performance Metrics</h3></div>
     <p style="color:var(--muted);font-size:.82rem;margin-bottom:1rem">Category classifier evaluation on test set</p>
-
     <div class="chart-grid">
+      <div class="chart-card"><div class="chart-title">Precision vs Recall</div><div class="chart-sub">Category-level comparison</div><div class="chart-wrap"><canvas id="precRecallChart"></canvas></div></div>
       <div class="chart-card">
-        <div class="chart-title">Precision vs Recall</div>
-        <div class="chart-sub">Category-level comparison</div>
-        <div class="chart-wrap"><canvas id="precRecallChart"></canvas></div>
-      </div>
-      <div class="chart-card">
-        <div class="chart-title">Overall Metrics</div>
-        <div class="chart-sub">Macro-averaged scores on held-out test set</div>
+        <div class="chart-title">Overall Metrics</div><div class="chart-sub">Macro-averaged scores on held-out test set</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:.75rem">
-          <div style="text-align:center;padding:1rem;background:#f8f9fa;border-radius:12px">
-            <div style="font-family:'Playfair Display',serif;font-size:2rem;font-weight:900;color:var(--green)">0.94</div>
-            <div style="font-size:.78rem;color:var(--muted);margin-top:.2rem">Accuracy</div>
-          </div>
-          <div style="text-align:center;padding:1rem;background:#f8f9fa;border-radius:12px">
-            <div style="font-family:'Playfair Display',serif;font-size:2rem;font-weight:900;color:var(--accent2)">0.93</div>
-            <div style="font-size:.78rem;color:var(--muted);margin-top:.2rem">Precision</div>
-          </div>
-          <div style="text-align:center;padding:1rem;background:#f8f9fa;border-radius:12px">
-            <div style="font-family:'Playfair Display',serif;font-size:2rem;font-weight:900;color:var(--green)">0.92</div>
-            <div style="font-size:.78rem;color:var(--muted);margin-top:.2rem">Recall</div>
-          </div>
-          <div style="text-align:center;padding:1rem;background:#f8f9fa;border-radius:12px">
-            <div style="font-family:'Playfair Display',serif;font-size:2rem;font-weight:900;color:#7c3aed">0.93</div>
-            <div style="font-size:.78rem;color:var(--muted);margin-top:.2rem">F1-Score</div>
-          </div>
+          <div style="text-align:center;padding:1rem;background:#f8f9fa;border-radius:12px"><div style="font-family:'Playfair Display',serif;font-size:2rem;font-weight:900;color:var(--green)">0.94</div><div style="font-size:.78rem;color:var(--muted);margin-top:.2rem">Accuracy</div></div>
+          <div style="text-align:center;padding:1rem;background:#f8f9fa;border-radius:12px"><div style="font-family:'Playfair Display',serif;font-size:2rem;font-weight:900;color:var(--accent2)">0.93</div><div style="font-size:.78rem;color:var(--muted);margin-top:.2rem">Precision</div></div>
+          <div style="text-align:center;padding:1rem;background:#f8f9fa;border-radius:12px"><div style="font-family:'Playfair Display',serif;font-size:2rem;font-weight:900;color:var(--green)">0.92</div><div style="font-size:.78rem;color:var(--muted);margin-top:.2rem">Recall</div></div>
+          <div style="text-align:center;padding:1rem;background:#f8f9fa;border-radius:12px"><div style="font-family:'Playfair Display',serif;font-size:2rem;font-weight:900;color:#7c3aed">0.93</div><div style="font-size:.78rem;color:var(--muted);margin-top:.2rem">F1-Score</div></div>
         </div>
-        <div style="background:var(--accent2);border-radius:12px;padding:1rem;margin-top:1rem;display:flex;justify-content:space-between;align-items:center">
-          <div>
-            <div style="color:rgba(255,255,255,.75);font-size:.75rem;font-weight:600">AU-ROC Score</div>
-            <div style="color:rgba(255,255,255,.75);font-size:.7rem">Area under ROC curve</div>
-          </div>
-          <div style="font-family:'Playfair Display',serif;font-size:2.2rem;font-weight:900;color:#fff">0.98</div>
-        </div>
-        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:.85rem 1rem;margin-top:1rem;font-size:.82rem;color:#15803d">
-          <strong>Strong Performance:</strong> The classifier achieves 94% accuracy with an excellent AU-ROC of 0.98, indicating highly reliable category predictions.
-        </div>
+        <div style="background:var(--accent2);border-radius:12px;padding:1rem;margin-top:1rem;display:flex;justify-content:space-between;align-items:center"><div><div style="color:rgba(255,255,255,.75);font-size:.75rem;font-weight:600">AU-ROC Score</div><div style="color:rgba(255,255,255,.75);font-size:.7rem">Area under ROC curve</div></div><div style="font-family:'Playfair Display',serif;font-size:2.2rem;font-weight:900;color:#fff">0.98</div></div>
+        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:.85rem 1rem;margin-top:1rem;font-size:.82rem;color:#15803d"><strong>Strong Performance:</strong> The classifier achieves 94% accuracy with an excellent AU-ROC of 0.98, indicating highly reliable category predictions.</div>
       </div>
     </div>
   </div>
-
 </div>
-
 <script>
 const API = window.API_BASE;
-
-const CAT_COLORS = [
-  '#c8102e','#1a3a5c','#d4a843','#16a34a','#7c3aed','#0891b2',
-  '#ea580c','#be185d','#65a30d','#0f766e','#1d4ed8','#9d174d'
-];
-const CATS = [
-  'Economy & Banking','Polity & Governance','International Relations',
-  'Science & Technology','Schemes & Appointments','Reports & Indices',
-  'Sports','Awards & Honours','Important Days & Obituaries',
-  'Summits & Conferences','National News','State News'
-];
-const CAT_DOTS = {
-  'Economy & Banking':'#16a34a','Polity & Governance':'#e65100',
-  'International Relations':'#1565c0','Science & Technology':'#6a1b9a',
-  'Schemes & Appointments':'#880e4f','Reports & Indices':'#283593',
-  'Sports':'#00695c','Awards & Honours':'#f57f17',
-  'Important Days & Obituaries':'#bf360c','Summits & Conferences':'#004d40',
-  'National News':'#1b5e20','State News':'#558b2f'
-};
-
+const CAT_COLORS = ['#c8102e','#1a3a5c','#d4a843','#16a34a','#7c3aed','#0891b2','#ea580c','#be185d','#65a30d','#0f766e','#1d4ed8','#9d174d'];
+const CAT_DOTS = {'Economy & Banking':'#16a34a','Polity & Governance':'#e65100','International Relations':'#1565c0','Science & Technology':'#6a1b9a','Schemes & Appointments':'#880e4f','Reports & Indices':'#283593','Sports':'#00695c','Awards & Honours':'#f57f17','Important Days & Obituaries':'#bf360c','Summits & Conferences':'#004d40','National News':'#1b5e20','State News':'#558b2f'};
 let charts = {};
-
 function destroyChart(id){ if(charts[id]){ charts[id].destroy(); delete charts[id]; } }
-
-function chartDefaults(){
-  Chart.defaults.font.family = "'DM Sans', sans-serif";
-  Chart.defaults.font.size = 12;
-  Chart.defaults.color = '#6b7280';
-  Chart.defaults.plugins.legend.labels.boxWidth = 12;
-  Chart.defaults.plugins.legend.labels.padding = 12;
-}
-
-async function loadAll(){
-  const btn = document.getElementById('refreshBtn');
-  btn.classList.add('spinning');
-  btn.textContent = '↻ Loading…';
-  chartDefaults();
-  await Promise.all([loadStats(), loadDaily(), loadCatStats(), loadSources(), loadRecent()]);
-  renderEvalCharts();
-  btn.classList.remove('spinning');
-  btn.textContent = '↻ Refresh';
-}
-
-async function loadStats(){
-  try{
-    const res = await fetch(`${API}/api/stats`);
-    const d = await res.json();
-    document.getElementById('kpiGrid').innerHTML = `
-      <div class="kpi-card" style="animation-delay:0s">
-        <div class="kpi-icon">📰</div>
-        <div class="kpi-num">${d.total}</div>
-        <div class="kpi-label">Total Articles</div>
-        <div class="kpi-delta delta-neutral">All time</div>
-      </div>
-      <div class="kpi-card" style="animation-delay:.06s">
-        <div class="kpi-icon">📅</div>
-        <div class="kpi-num">${d.today||0}</div>
-        <div class="kpi-label">Today's Articles</div>
-        <div class="kpi-delta delta-up">↑ Today</div>
-      </div>
-      <div class="kpi-card" style="animation-delay:.12s">
-        <div class="kpi-icon">📆</div>
-        <div class="kpi-num">${d.this_week||0}</div>
-        <div class="kpi-label">This Week</div>
-        <div class="kpi-delta delta-neutral">Last 7 days</div>
-      </div>
-      <div class="kpi-card" style="animation-delay:.18s">
-        <div class="kpi-icon">🏷️</div>
-        <div class="kpi-num">${Object.keys(d.by_category||{}).length}</div>
-        <div class="kpi-label">Categories</div>
-        <div class="kpi-delta delta-neutral">${'' } sources</div>
-      </div>`;
-    if(null){
-      const dt = new Date(null);
-      document.getElementById('lastUpdated').innerHTML =
-        `Last pipeline run: <strong>${dt.toLocaleString('en-IN')}</strong>`;
-    }
-  }catch(e){ console.error(e); }
-}
-
-async function loadDaily(){
-  try{
-    const res = await fetch(`${API}/api/stats`);
-    const stats = await res.json();
-    const byDate = stats.by_date||{};
-    const sorted = Object.entries(byDate).sort((a,b)=>a[0].localeCompare(b[0])).slice(-30);
-    const d = { labels: sorted.map(x=>x[0]), data: sorted.map(x=>x[1]) };
-    destroyChart('daily');
-    const ctx = document.getElementById('dailyChart').getContext('2d');
-    charts['daily'] = new Chart(ctx,{
-      type:'line',
-      data:{
-        labels: d.labels.map(l=>{ const dt=new Date(l+'T00:00:00'); return dt.toLocaleDateString('en-IN',{day:'numeric',month:'short'}); }),
-        datasets:[{
-          label:'Articles',data:d.data,
-          borderColor:'#c8102e',backgroundColor:'rgba(200,16,46,0.08)',
-          borderWidth:2.5,pointRadius:3,pointBackgroundColor:'#c8102e',
-          tension:.35,fill:true
-        }]
-      },
-      options:{
-        responsive:true,maintainAspectRatio:false,
-        plugins:{legend:{display:false}},
-        scales:{
-          x:{grid:{display:false},ticks:{maxTicksLimit:10}},
-          y:{beginAtZero:true,grid:{color:'#f0ede6'},ticks:{precision:0}}
-        }
-      }
-    });
-  }catch(e){ console.error(e); }
-}
-
-async function loadCatStats(){
-  try{
-    const res = await fetch(`${API}/api/stats`);
-    const stats = await res.json();
-    const byCat = stats.by_category||{};
-    const d = { labels: Object.keys(byCat), data: Object.values(byCat) };
-    // Bar
-    destroyChart('catBar');
-    const ctx2 = document.getElementById('catBar').getContext('2d');
-    charts['catBar'] = new Chart(ctx2,{
-      type:'bar',
-      data:{
-        labels:d.labels.map(l=>l.length>18?l.slice(0,16)+'…':l),
-        datasets:[{label:'Articles',data:d.data,backgroundColor:CAT_COLORS,borderRadius:4}]
-      },
-      options:{
-        indexAxis:'y',responsive:true,maintainAspectRatio:false,
-        plugins:{legend:{display:false}},
-        scales:{
-          x:{grid:{display:false},ticks:{precision:0}},
-          y:{grid:{display:false},ticks:{font:{size:10}}}
-        }
-      }
-    });
-  }catch(e){ console.error(e); }
-}
-
-async function loadSources(){
-  try{
-    const res2 = await fetch(`${API}/api/news?limit=200`);
-    const news = await res2.json();
-    const srcCounts = {};
-    (news.articles||[]).forEach(a=>{ const s=a.source||'Unknown'; srcCounts[s]=(srcCounts[s]||0)+1; });
-    const sorted = Object.entries(srcCounts).sort((a,b)=>b[1]-a[1]).slice(0,10);
-    const d = { labels: sorted.map(x=>x[0]), data: sorted.map(x=>x[1]) };
-    destroyChart('sourceBar');
-    const ctx = document.getElementById('sourceBar').getContext('2d');
-    charts['sourceBar'] = new Chart(ctx,{
-      type:'bar',
-      data:{
-        labels:d.labels.map(l=>l.length>20?l.slice(0,18)+'…':l),
-        datasets:[{label:'Articles',data:d.data,backgroundColor:'rgba(26,58,92,0.75)',borderRadius:4}]
-      },
-      options:{
-        indexAxis:'y',responsive:true,maintainAspectRatio:false,
-        plugins:{legend:{display:false}},
-        scales:{
-          x:{grid:{display:false},ticks:{precision:0}},
-          y:{grid:{display:false},ticks:{font:{size:10}}}
-        }
-      }
-    });
-  }catch(e){ console.error(e); }
-}
-
-async function loadRecent(){
-  try{
-    const res = await fetch(`${API}/api/news?limit=20`);
-    const d = await res.json();
-    const tbody = document.getElementById('recentBody');
-    if(!d.articles.length){
-      tbody.innerHTML='<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--muted)">No articles yet — run the pipeline first.</td></tr>';
-      return;
-    }
-    tbody.innerHTML = d.articles.map(a=>{
-      const dotColor = CAT_DOTS[a.category]||'#6b7280';
-      const conf = Math.round(a.confidence*100);
-      const cls = conf>=90?'conf-high':'conf-med';
-      const dt = new Date(a.date+'T00:00:00');
-      const dateStr = dt.toLocaleDateString('en-IN',{day:'numeric',month:'short'});
-      return `<tr>
-        <td><span class="cat-dot" style="background:${dotColor}"></span>${esc(a.category)}</td>
-        <td class="headline-cell" title="${esc(a.headline)}">${esc(a.headline)}</td>
-        <td style="color:var(--muted);font-size:.8rem">${esc(a.source||'Unknown')}</td>
-        <td><span class="conf-badge ${cls}">${conf}%</span></td>
-        <td style="color:var(--muted);font-size:.8rem;white-space:nowrap">${dateStr}</td>
-      </tr>`;
-    }).join('');
-  }catch(e){ console.error(e); }
-}
-
-function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-
-function renderEvalCharts(){
-  // ROUGE Bar Chart
-  destroyChart('rougeBar');
-  const ctx1 = document.getElementById('rougeBarChart').getContext('2d');
-  charts['rougeBar'] = new Chart(ctx1,{
-    type:'bar',
-    data:{
-      labels:['TextRank','LexRank','BART baseline','BART + LexRank'],
-      datasets:[
-        {label:'ROUGE-1',data:[0.38,0.41,0.44,0.46],backgroundColor:'rgba(200,16,46,0.75)',borderRadius:4},
-        {label:'ROUGE-2',data:[0.16,0.18,0.21,0.23],backgroundColor:'rgba(13,148,136,0.75)',borderRadius:4},
-        {label:'ROUGE-L',data:[0.30,0.33,0.36,0.38],backgroundColor:'rgba(26,58,92,0.85)',borderRadius:4}
-      ]
-    },
-    options:{
-      responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{position:'bottom',labels:{font:{size:10}}}},
-      scales:{
-        x:{grid:{display:false},ticks:{font:{size:10}}},
-        y:{beginAtZero:true,max:0.6,grid:{color:'#f0ede6'},ticks:{precision:2}}
-      }
-    }
-  });
-
-  // Precision vs Recall Bar Chart
-  destroyChart('precRecall');
-  const cats = ['Economy','Polity','Int\'l Rel','Sci & Tech','Schemes','Reports','Sports','Awards','Imp Days','Summits','National','State'];
-  const precision = [0.95,0.93,0.92,0.94,0.91,0.92,0.95,0.93,0.90,0.91,0.95,0.92];
-  const recall    = [0.94,0.92,0.91,0.93,0.90,0.91,0.96,0.92,0.91,0.90,0.91,0.91];
-  const ctx2 = document.getElementById('precRecallChart').getContext('2d');
-  charts['precRecall'] = new Chart(ctx2,{
-    type:'bar',
-    data:{
-      labels:cats,
-      datasets:[
-        {label:'Precision',data:precision,backgroundColor:'rgba(26,58,92,0.8)',borderRadius:3},
-        {label:'Recall',data:recall,backgroundColor:'rgba(13,148,136,0.7)',borderRadius:3}
-      ]
-    },
-    options:{
-      responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{position:'top',labels:{font:{size:10}}}},
-      scales:{
-        x:{grid:{display:false},ticks:{font:{size:9}}},
-        y:{min:0.80,max:1.00,grid:{color:'#f0ede6'},ticks:{precision:2,font:{size:10}}}
-      }
-    }
-  });
-}
-
+function chartDefaults(){Chart.defaults.font.family="'DM Sans', sans-serif";Chart.defaults.font.size=12;Chart.defaults.color='#6b7280';Chart.defaults.plugins.legend.labels.boxWidth=12;Chart.defaults.plugins.legend.labels.padding=12;}
+async function loadAll(){const btn=document.getElementById('refreshBtn');btn.classList.add('spinning');btn.textContent='↻ Loading…';chartDefaults();await Promise.all([loadStats(),loadDaily(),loadCatStats(),loadSources(),loadRecent()]);renderEvalCharts();btn.classList.remove('spinning');btn.textContent='↻ Refresh';}
+async function loadStats(){try{const res=await fetch(`${API}/api/stats`);const d=await res.json();document.getElementById('kpiGrid').innerHTML=`<div class="kpi-card" style="animation-delay:0s"><div class="kpi-icon">📰</div><div class="kpi-num">${d.total}</div><div class="kpi-label">Total Articles</div><div class="kpi-delta delta-neutral">All time</div></div><div class="kpi-card" style="animation-delay:.06s"><div class="kpi-icon">📅</div><div class="kpi-num">${d.today||0}</div><div class="kpi-label">Today's Articles</div><div class="kpi-delta delta-up">↑ Today</div></div><div class="kpi-card" style="animation-delay:.12s"><div class="kpi-icon">📆</div><div class="kpi-num">${d.this_week||0}</div><div class="kpi-label">This Week</div><div class="kpi-delta delta-neutral">Last 7 days</div></div><div class="kpi-card" style="animation-delay:.18s"><div class="kpi-icon">🏷️</div><div class="kpi-num">${Object.keys(d.by_category||{}).length}</div><div class="kpi-label">Categories</div><div class="kpi-delta delta-neutral">Active</div></div>`;}catch(e){console.error(e);}}
+async function loadDaily(){try{const res=await fetch(`${API}/api/stats`);const stats=await res.json();const byDate=stats.by_date||{};const sorted=Object.entries(byDate).sort((a,b)=>a[0].localeCompare(b[0])).slice(-30);destroyChart('daily');const ctx=document.getElementById('dailyChart').getContext('2d');charts['daily']=new Chart(ctx,{type:'line',data:{labels:sorted.map(x=>{const dt=new Date(x[0]+'T00:00:00');return dt.toLocaleDateString('en-IN',{day:'numeric',month:'short'});}),datasets:[{label:'Articles',data:sorted.map(x=>x[1]),borderColor:'#c8102e',backgroundColor:'rgba(200,16,46,0.08)',borderWidth:2.5,pointRadius:3,pointBackgroundColor:'#c8102e',tension:.35,fill:true}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{maxTicksLimit:10}},y:{beginAtZero:true,grid:{color:'#f0ede6'},ticks:{precision:0}}}}});}catch(e){console.error(e);}}
+async function loadCatStats(){try{const res=await fetch(`${API}/api/stats`);const stats=await res.json();const byCat=stats.by_category||{};destroyChart('catBar');const ctx2=document.getElementById('catBar').getContext('2d');charts['catBar']=new Chart(ctx2,{type:'bar',data:{labels:Object.keys(byCat).map(l=>l.length>18?l.slice(0,16)+'…':l),datasets:[{label:'Articles',data:Object.values(byCat),backgroundColor:CAT_COLORS,borderRadius:4}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{precision:0}},y:{grid:{display:false},ticks:{font:{size:10}}}}}});}catch(e){console.error(e);}}
+async function loadSources(){try{const res=await fetch(`${API}/api/news?limit=200`);const news=await res.json();const srcCounts={};(news.articles||[]).forEach(a=>{const s=a.source||'Unknown';srcCounts[s]=(srcCounts[s]||0)+1;});const sorted=Object.entries(srcCounts).sort((a,b)=>b[1]-a[1]).slice(0,10);destroyChart('sourceBar');const ctx=document.getElementById('sourceBar').getContext('2d');charts['sourceBar']=new Chart(ctx,{type:'bar',data:{labels:sorted.map(x=>x[0].length>20?x[0].slice(0,18)+'…':x[0]),datasets:[{label:'Articles',data:sorted.map(x=>x[1]),backgroundColor:'rgba(26,58,92,0.75)',borderRadius:4}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{precision:0}},y:{grid:{display:false},ticks:{font:{size:10}}}}}});}catch(e){console.error(e);}}
+async function loadRecent(){try{const res=await fetch(`${API}/api/news?limit=20`);const d=await res.json();const tbody=document.getElementById('recentBody');if(!d.articles.length){tbody.innerHTML='<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--muted)">No articles yet — run the pipeline first.</td></tr>';return;}tbody.innerHTML=d.articles.map(a=>{const dotColor=CAT_DOTS[a.category]||'#6b7280';const conf=Math.round(a.confidence*100);const cls=conf>=90?'conf-high':'conf-med';const dt=new Date(a.date+'T00:00:00');const dateStr=dt.toLocaleDateString('en-IN',{day:'numeric',month:'short'});return `<tr><td><span class="cat-dot" style="background:${dotColor}"></span>${esc(a.category)}</td><td class="headline-cell" title="${esc(a.headline)}">${esc(a.headline)}</td><td style="color:var(--muted);font-size:.8rem">${esc(a.source||'Unknown')}</td><td><span class="conf-badge ${cls}">${conf}%</span></td><td style="color:var(--muted);font-size:.8rem;white-space:nowrap">${dateStr}</td></tr>`;}).join('');}catch(e){console.error(e);}}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function renderEvalCharts(){destroyChart('rougeBar');const ctx1=document.getElementById('rougeBarChart').getContext('2d');charts['rougeBar']=new Chart(ctx1,{type:'bar',data:{labels:['TextRank','LexRank','BART baseline','BART + LexRank'],datasets:[{label:'ROUGE-1',data:[0.38,0.41,0.44,0.46],backgroundColor:'rgba(200,16,46,0.75)',borderRadius:4},{label:'ROUGE-2',data:[0.16,0.18,0.21,0.23],backgroundColor:'rgba(13,148,136,0.75)',borderRadius:4},{label:'ROUGE-L',data:[0.30,0.33,0.36,0.38],backgroundColor:'rgba(26,58,92,0.85)',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:10}}}},scales:{x:{grid:{display:false},ticks:{font:{size:10}}},y:{beginAtZero:true,max:0.6,grid:{color:'#f0ede6'},ticks:{precision:2}}}}});destroyChart('precRecall');const cats=['Economy','Polity','Int\'l Rel','Sci & Tech','Schemes','Reports','Sports','Awards','Imp Days','Summits','National','State'];const precision=[0.95,0.93,0.92,0.94,0.91,0.92,0.95,0.93,0.90,0.91,0.95,0.92];const recall=[0.94,0.92,0.91,0.93,0.90,0.91,0.96,0.92,0.91,0.90,0.91,0.91];const ctx2=document.getElementById('precRecallChart').getContext('2d');charts['precRecall']=new Chart(ctx2,{type:'bar',data:{labels:cats,datasets:[{label:'Precision',data:precision,backgroundColor:'rgba(26,58,92,0.8)',borderRadius:3},{label:'Recall',data:recall,backgroundColor:'rgba(13,148,136,0.7)',borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{font:{size:10}}}},scales:{x:{grid:{display:false},ticks:{font:{size:9}}},y:{min:0.80,max:1.00,grid:{color:'#f0ede6'},ticks:{precision:2,font:{size:10}}}}}});}
 loadAll();
 </script>
-</body>
-</html>
+</body></html>
