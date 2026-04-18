@@ -66,6 +66,21 @@
     {"name": "Zee News - India", "url": "https://zeenews.india.com/rss/india-national-news.xml", "priority": 2},
     {"name": "The Print - India", "url": "https://theprint.in/feed/", "priority": 2},
     {"name": "Firstpost - India", "url": "https://www.firstpost.com/rss/india.xml", "priority": 2},
-    {"name": "Wion - India", "url": "https://www.wionews.com/feeds/india.xml", "priority": 2}
+    {"name": "Wion - India", "url": "https://www.wionews.com/feeds/india.xml", "priority": 2},
+    {"name": "MHA Press Releases", "url": "https://pib.gov.in/RssMain.aspx?ModId=1&Lang=1&Regid=3", "priority": 1},
+    {"name": "PIB - Defence", "url": "https://pib.gov.in/RssMain.aspx?ModId=4&Lang=1&Regid=3", "priority": 1},
+    {"name": "PIB - Education", "url": "https://pib.gov.in/RssMain.aspx?ModId=8&Lang=1&Regid=3", "priority": 1},
+    {"name": "PIB - Health", "url": "https://pib.gov.in/RssMain.aspx?ModId=10&Lang=1&Regid=3", "priority": 1},
+    {"name": "PIB - Agriculture", "url": "https://pib.gov.in/RssMain.aspx?ModId=5&Lang=1&Regid=3", "priority": 1},
+    {"name": "Ministry of External Affairs", "url": "https://www.mea.gov.in/rss/pressrelease.xml", "priority": 1},
+    {"name": "SEBI Press Releases", "url": "https://www.sebi.gov.in/sebi_data/rss/pressrelease.xml", "priority": 1},
+    {"name": "Sports Authority of India", "url": "https://sportsauthorityofindia.nic.in/rss.xml", "priority": 2},
+    {"name": "India Science Wire", "url": "https://www.indiasciencewire.org/feed/", "priority": 1},
+    {"name": "Vigyan Prasar", "url": "https://vigyanprasar.gov.in/feed/", "priority": 1},
+    {"name": "Press Trust of India", "url": "https://www.ptinews.com/rss/rss.aspx?id=1", "priority": 1},
+    {"name": "The Hindu - States", "url": "https://www.thehindu.com/news/states/feeder/default.rss", "priority": 1},
+    {"name": "The Hindu - Economy", "url": "https://www.thehindu.com/business/Economy/feeder/default.rss", "priority": 1},
+    {"name": "Lok Sabha - Latest", "url": "https://loksabha.nic.in/rss/latestnews.xml", "priority": 1},
+    {"name": "India Budget", "url": "https://www.indiabudget.gov.in/rss.xml", "priority": 1}
   ]
 }
