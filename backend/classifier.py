@@ -87,7 +87,21 @@ NOT_RELEVANT_SIGNALS = [
     'bollywood', 'celebrity gossip', 'horoscope', 'dating tips',
     'fashion week', 'beauty tips', 'tv serial', 'reality show',
     'box office', 'web series', 'hair care', 'skin care',
-    'weight loss tips', 'movie review', 'gossip'
+    'weight loss tips', 'movie review', 'gossip',
+    # General news - not CA relevant
+    'weather forecast', 'weather update', 'temperature today',
+    'rain forecast', 'monsoon update', 'cyclone warning',
+    'crime news', 'murder case', 'robbery', 'theft', 'arrested for',
+    'accident', 'road accident', 'car crash', 'train accident',
+    'fire breaks out', 'building collapse',
+    'holiday declared', 'public holiday', 'bank holiday',
+    'traffic update', 'traffic jam', 'road block',
+    'local news', 'city news', 'town news',
+    'recipe', 'cooking tips', 'food review', 'restaurant review',
+    'astrology', 'zodiac', 'numerology',
+    'stock tips', 'share tips', 'buy sell',
+    'ipl auction', 'player transfer', 'match preview', 'match result',
+    'entertainment news', 'celebrity wedding', 'celebrity baby',
 ]
 
 

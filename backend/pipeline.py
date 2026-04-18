@@ -25,7 +25,7 @@ from summarizer import generate_summary
 logger = logging.getLogger(__name__)
 
 # Confidence threshold - only store articles above this
-CONFIDENCE_THRESHOLD = 0.80
+CONFIDENCE_THRESHOLD = 0.85
 # Cosine similarity threshold for deduplication (if embeddings available)
 DEDUP_SIMILARITY_THRESHOLD = 0.95
 
