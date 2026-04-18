@@ -371,6 +371,9 @@ GENERAL_NEWS_KEYWORDS = [
     'weather forecast', 'weather update', 'temperature today', 'rain forecast',
     'monsoon update', 'cyclone warning', 'heat wave alert', 'cold wave alert',
     'fog alert', 'weather alert', 'imd forecast',
+    # Fuel prices
+    'petrol price', 'diesel price', 'fuel price', 'lpg price', 'cng price',
+    'petrol rate', 'diesel rate', 'fuel rate today',
     # Crime & Accidents
     'murder case', 'robbery', 'theft case', 'arrested for', 'crime news',
     'road accident', 'car crash', 'train accident', 'bus accident',
@@ -400,6 +403,7 @@ def cleanup_database(dry_run: bool = False) -> Dict:
     1. Have confidence < 0.85
     2. Contain general news keywords in headline or summary
 
+    Safety: aborts if remaining articles would drop below 50.
     If dry_run=True, only returns count without deleting.
     Returns dict with counts of removed articles.
     """
@@ -409,36 +413,71 @@ def cleanup_database(dry_run: bool = False) -> Dict:
     removed_low_conf = 0
     removed_general  = 0
 
-    # 1. Remove low confidence articles
-    if dry_run:
-        cur.execute("SELECT COUNT(*) FROM exam_ca_articles WHERE confidence < 0.85")
-        removed_low_conf = cur.fetchone()[0]
-    else:
-        cur.execute("DELETE FROM exam_ca_articles WHERE confidence < 0.85")
-        removed_low_conf = cur.rowcount
-        conn.commit()
-        logger.info(f"Removed {removed_low_conf} low-confidence articles (< 0.85)")
+    # Get current total
+    cur.execute("SELECT COUNT(*) FROM exam_ca_articles")
+    total_before = cur.fetchone()[0]
 
-    # 2. Remove general news by keyword matching
+    # 1. Count low confidence articles
+    cur.execute("SELECT COUNT(*) FROM exam_ca_articles WHERE confidence < 0.85")
+    low_conf_count = cur.fetchone()[0]
+
+    # 2. Count general news keyword matches — headline only (not summary)
+    general_ids = set()
     for kw in GENERAL_NEWS_KEYWORDS:
         pattern = f'%{kw}%'
-        if dry_run:
-            cur.execute(
-                "SELECT COUNT(*) FROM exam_ca_articles "
-                "WHERE LOWER(headline) LIKE %s OR LOWER(summary) LIKE %s",
-                (pattern, pattern)
-            )
-            removed_general += cur.fetchone()[0]
-        else:
-            cur.execute(
-                "DELETE FROM exam_ca_articles "
-                "WHERE LOWER(headline) LIKE %s OR LOWER(summary) LIKE %s",
-                (pattern, pattern)
-            )
-            removed_general += cur.rowcount
-            conn.commit()
+        cur.execute(
+            "SELECT id FROM exam_ca_articles WHERE LOWER(headline) LIKE %s",
+            (pattern,)
+        )
+        for row in cur.fetchall():
+            general_ids.add(row[0])
 
-    if not dry_run:
+    total_to_remove = low_conf_count + len(general_ids)
+    remaining = total_before - total_to_remove
+
+    # Safety check — never wipe entire DB
+    SAFETY_MIN = 50
+    if remaining < SAFETY_MIN and not dry_run:
+        logger.warning(
+            f"Cleanup aborted: would leave only {remaining} articles "
+            f"(minimum {SAFETY_MIN} required). No changes made."
+        )
+        conn.close()
+        return {
+            'removed_low_confidence': 0,
+            'removed_general_news':   0,
+            'total_removed':          0,
+            'dry_run':                dry_run,
+            'aborted':                True,
+            'reason':                 f'Would leave only {remaining} articles (min {SAFETY_MIN})',
+        }
+
+    if dry_run:
+        conn.close()
+        return {
+            'removed_low_confidence': low_conf_count,
+            'removed_general_news':   len(general_ids),
+            'total_removed':          total_to_remove,
+            'remaining':              remaining,
+            'dry_run':                True,
+            'aborted':                False,
+        }
+
+    # 1. Delete low confidence
+    cur.execute("DELETE FROM exam_ca_articles WHERE confidence < 0.85")
+    removed_low_conf = cur.rowcount
+    conn.commit()
+    logger.info(f"Removed {removed_low_conf} low-confidence articles (< 0.85)")
+
+    # 2. Delete general news (by collected ids)
+    if general_ids:
+        id_list = list(general_ids)
+        cur.execute(
+            f"DELETE FROM exam_ca_articles WHERE id IN ({_placeholders(len(id_list))})",
+            id_list
+        )
+        removed_general = cur.rowcount
+        conn.commit()
         logger.info(f"Removed {removed_general} general news articles")
 
     conn.close()
@@ -446,7 +485,8 @@ def cleanup_database(dry_run: bool = False) -> Dict:
         'removed_low_confidence': removed_low_conf,
         'removed_general_news':   removed_general,
         'total_removed':          removed_low_conf + removed_general,
-        'dry_run':                dry_run,
+        'dry_run':                False,
+        'aborted':                False,
     }
 
 
