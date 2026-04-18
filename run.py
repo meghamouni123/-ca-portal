@@ -155,7 +155,7 @@ class CAHandler(http.server.BaseHTTPRequestHandler):
 # ─────────────────────────────────────────
 def startup():
     """Initialize DB and seed data if empty."""
-    from database import init_db, get_stats
+    from database import init_db, get_stats, cleanup_database
     init_db()
     stats = get_stats()
     if stats['total'] == 0:
@@ -174,6 +174,16 @@ def startup():
         except Exception as e:
             logger.warning(f"Extra seed error: {e}")
         stats = get_stats()
+
+    # Auto-cleanup: remove low-confidence and general news articles
+    cleanup_result = cleanup_database(dry_run=False)
+    if cleanup_result['total_removed'] > 0:
+        logger.info(
+            f"Auto-cleanup: removed {cleanup_result['removed_low_confidence']} low-conf "
+            f"+ {cleanup_result['removed_general_news']} general news articles"
+        )
+        stats = get_stats()
+
     logger.info(f"DB ready: {stats['total']} articles across {len(stats['by_category'])} categories")
     return stats
 
@@ -205,7 +215,26 @@ if __name__ == '__main__':
     p = argparse.ArgumentParser(description='CA Portal Server')
     p.add_argument('--port', type=int, default=8000)
     p.add_argument('--train', action='store_true', help='Retrain classifier before starting')
+    p.add_argument('--cleanup', action='store_true', help='Remove low-confidence and general news from DB')
+    p.add_argument('--dry-run', action='store_true', help='Show what cleanup would remove without deleting')
     args = p.parse_args()
+
+    if args.cleanup or args.dry_run:
+        from dotenv import load_dotenv
+        load_dotenv(os.path.join(BASE_DIR, '.env'))
+        from database import init_db, cleanup_database
+        init_db()
+        result = cleanup_database(dry_run=args.dry_run)
+        if args.dry_run:
+            print(f"[DRY RUN] Would remove:")
+            print(f"  Low confidence (< 0.85): {result['removed_low_confidence']} articles")
+            print(f"  General news keywords:   {result['removed_general_news']} articles")
+        else:
+            print(f"Cleanup complete:")
+            print(f"  Removed low confidence:  {result['removed_low_confidence']} articles")
+            print(f"  Removed general news:    {result['removed_general_news']} articles")
+            print(f"  Total removed:           {result['total_removed']} articles")
+        import sys; sys.exit(0)
 
     if args.train:
         logger.info("Retraining classifier...")

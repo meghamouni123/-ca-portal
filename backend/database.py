@@ -363,6 +363,93 @@ def url_exists(url_hash: str) -> bool:
     return exists
 
 
+# ─── Cleanup ─────────────────────────────────────────────────────────────────
+
+# Keywords in headlines/summaries that indicate non-CA general news
+GENERAL_NEWS_KEYWORDS = [
+    # Weather & Climate (general)
+    'weather forecast', 'weather update', 'temperature today', 'rain forecast',
+    'monsoon update', 'cyclone warning', 'heat wave alert', 'cold wave alert',
+    'fog alert', 'weather alert', 'imd forecast',
+    # Crime & Accidents
+    'murder case', 'robbery', 'theft case', 'arrested for', 'crime news',
+    'road accident', 'car crash', 'train accident', 'bus accident',
+    'fire breaks out', 'building collapse', 'blast kills', 'shooting incident',
+    'rape case', 'kidnapping', 'drug bust', 'gang war',
+    # Elections (local/state voting news, not policy)
+    'voting begins', 'voting ends', 'voter turnout', 'exit poll',
+    'election result', 'counting begins', 'bypolls', 'by-election result',
+    # Traffic & Local
+    'traffic jam', 'traffic update', 'road block', 'waterlogging',
+    'pothole', 'flyover closed',
+    # Entertainment
+    'bollywood', 'box office', 'movie review', 'film review', 'web series',
+    'celebrity gossip', 'celebrity wedding', 'celebrity baby',
+    'tv serial', 'reality show', 'ott release',
+    # Lifestyle
+    'horoscope', 'astrology', 'zodiac', 'recipe', 'cooking tips',
+    'weight loss', 'hair care', 'skin care', 'beauty tips', 'fashion week',
+    # Sports scores (not CA relevant)
+    'match score', 'live score', 'scorecard', 'ipl score',
+]
+
+
+def cleanup_database(dry_run: bool = False) -> Dict:
+    """
+    Remove articles from DB that:
+    1. Have confidence < 0.85
+    2. Contain general news keywords in headline or summary
+
+    If dry_run=True, only returns count without deleting.
+    Returns dict with counts of removed articles.
+    """
+    conn = get_connection()
+    cur  = conn.cursor()
+
+    removed_low_conf = 0
+    removed_general  = 0
+
+    # 1. Remove low confidence articles
+    if dry_run:
+        cur.execute("SELECT COUNT(*) FROM exam_ca_articles WHERE confidence < 0.85")
+        removed_low_conf = cur.fetchone()[0]
+    else:
+        cur.execute("DELETE FROM exam_ca_articles WHERE confidence < 0.85")
+        removed_low_conf = cur.rowcount
+        conn.commit()
+        logger.info(f"Removed {removed_low_conf} low-confidence articles (< 0.85)")
+
+    # 2. Remove general news by keyword matching
+    for kw in GENERAL_NEWS_KEYWORDS:
+        pattern = f'%{kw}%'
+        if dry_run:
+            cur.execute(
+                "SELECT COUNT(*) FROM exam_ca_articles "
+                "WHERE LOWER(headline) LIKE %s OR LOWER(summary) LIKE %s",
+                (pattern, pattern)
+            )
+            removed_general += cur.fetchone()[0]
+        else:
+            cur.execute(
+                "DELETE FROM exam_ca_articles "
+                "WHERE LOWER(headline) LIKE %s OR LOWER(summary) LIKE %s",
+                (pattern, pattern)
+            )
+            removed_general += cur.rowcount
+            conn.commit()
+
+    if not dry_run:
+        logger.info(f"Removed {removed_general} general news articles")
+
+    conn.close()
+    return {
+        'removed_low_confidence': removed_low_conf,
+        'removed_general_news':   removed_general,
+        'total_removed':          removed_low_conf + removed_general,
+        'dry_run':                dry_run,
+    }
+
+
 # ─── Quick test ──────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
